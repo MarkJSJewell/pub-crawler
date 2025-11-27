@@ -3,26 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="description" content="Plan your perfect pub crawl with historic pubs, sports bars, outdoor seating, afternoon tea, and happy hours">
-    <meta name="theme-color" content="#1a73e8">
-    <meta name="mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="default">
-    <meta name="apple-mobile-web-app-title" content="Pub Crawler">
-    
     <title>Pub Crawl Planner</title>
-    
-    <!-- PWA Manifest -->
-    <link rel="manifest" href="manifest.json">
-    
-    <!-- iOS Icons -->
-    <link rel="apple-touch-icon" href="icon-192.png">
-    <link rel="apple-touch-icon" sizes="192x192" href="icon-192.png">
-    <link rel="apple-touch-icon" sizes="512x512" href="icon-512.png">
-    
-    <!-- Standard favicon -->
-    <link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
-    
     <style>
         * {
             margin: 0;
@@ -679,13 +660,26 @@ function saveApiKey() {
             
             console.log('Searching for types:', includedTypes);
             
-            // Use new Places API (Nearby Search) instead of Text Search
-            const url = 'https://places.googleapis.com/v1/places:searchNearby';
+            // Use new Places API (Text Search) - works more reliably
+            const url = 'https://places.googleapis.com/v1/places:searchText';
+            
+            // Build text query based on venue types
+            let textQuery = 'pub';
+            if (historicFilter === 'sports') {
+                textQuery = 'sports bar OR pub';
+            } else if (historicFilter === 'afternoontea') {
+                textQuery = 'afternoon tea OR tea room OR cafe';
+            } else if (historicFilter === 'happyhour') {
+                textQuery = 'bar OR pub';
+            } else if (historicFilter === 'outdoor') {
+                textQuery = 'pub OR bar';
+            } else if (historicFilter === 'priority') {
+                textQuery = 'historic pub OR traditional pub';
+            }
             
             const requestBody = {
-                includedTypes: includedTypes,
-                maxResultCount: 20,
-                locationRestriction: {
+                textQuery: textQuery,
+                locationBias: {
                     circle: {
                         center: {
                             latitude: center.lat,
@@ -694,7 +688,8 @@ function saveApiKey() {
                         radius: maxDistance
                     }
                 },
-                rankPreference: 'DISTANCE'
+                rankPreference: 'DISTANCE',
+                maxResultCount: 20
             };
             
             console.log('Places API request:', JSON.stringify(requestBody, null, 2));
@@ -702,7 +697,7 @@ function saveApiKey() {
             const headers = {
                 'Content-Type': 'application/json',
                 'X-Goog-Api-Key': apiKey,
-                'X-Goog-FieldMask': 'places.id,places.displayName,places.formattedAddress,places.location,places.rating,places.userRatingCount,places.types,places.editorialSummary,places.currentOpeningHours,places.regularOpeningHours,places.generativeSummary,places.goodForWatchingSports,places.outdoorSeating,places.servesAfternoonTea'
+                'X-Goog-FieldMask': 'places.id,places.displayName,places.formattedAddress,places.location,places.rating,places.userRatingCount,places.types,places.editorialSummary,places.primaryType'
             };
             
             try {
@@ -732,17 +727,6 @@ function saveApiKey() {
                     const lat = place.location?.latitude || 0;
                     const lng = place.location?.longitude || 0;
                     
-                    // Log to check for AI summary and attribute
-                    console.log(`${place.displayName?.text}: goodForWatchingSports =`, place.goodForWatchingSports, 'outdoorSeating =', place.outdoorSeating, 'servesAfternoonTea =', place.servesAfternoonTea, 'generativeSummary =', place.generativeSummary);
-                    
-                    // Get today's opening hours
-                    let todayHours = null;
-                    if (place.regularOpeningHours?.weekdayDescriptions) {
-                        const today = new Date().getDay(); // 0 = Sunday, 1 = Monday, etc.
-                        const dayIndex = today === 0 ? 6 : today - 1; // Convert to 0 = Monday format
-                        todayHours = place.regularOpeningHours.weekdayDescriptions[dayIndex] || null;
-                    }
-                    
                     return {
                         place_id: place.id,
                         name: place.displayName?.text || 'Unknown',
@@ -753,16 +737,13 @@ function saveApiKey() {
                         geometry: {
                             location: new google.maps.LatLng(lat, lng)
                         },
-                        opening_hours: place.currentOpeningHours ? {
-                            open_now: place.currentOpeningHours.openNow,
-                            weekday_text: place.regularOpeningHours?.weekdayDescriptions || []
-                        } : null,
-                        today_hours: todayHours,
+                        opening_hours: null,
+                        today_hours: null,
                         editorial_summary: place.editorialSummary?.text || '',
-                        ai_summary: place.generativeSummary?.overview?.text || place.generativeSummary?.description?.text || '',
-                        goodForWatchingSports: place.goodForWatchingSports || false,
-                        outdoorSeating: place.outdoorSeating || false,
-                        servesAfternoonTea: place.servesAfternoonTea || false
+                        ai_summary: '',
+                        goodForWatchingSports: false,
+                        outdoorSeating: false,
+                        servesAfternoonTea: false
                     };
                 });
                 
@@ -1498,94 +1479,6 @@ function saveApiKey() {
                 }
             });
         });
-    </script>
-    
-    <!-- PWA Installation Script -->
-    <script>
-        // Register service worker
-        if ('serviceWorker' in navigator) {
-            window.addEventListener('load', () => {
-                navigator.serviceWorker.register('./service-worker.js')
-                    .then(registration => {
-                        console.log('Service Worker registered successfully:', registration.scope);
-                    })
-                    .catch(error => {
-                        console.log('Service Worker registration failed:', error);
-                    });
-            });
-        }
-        
-        // PWA install prompt
-        let deferredPrompt;
-        const installButton = document.createElement('button');
-        installButton.textContent = 'Install App';
-        installButton.style.cssText = `
-            position: fixed;
-            bottom: 20px;
-            right: 20px;
-            background: #1a73e8;
-            color: white;
-            border: none;
-            padding: 12px 24px;
-            border-radius: 24px;
-            font-size: 14px;
-            font-weight: 500;
-            cursor: pointer;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.3);
-            z-index: 1000;
-            display: none;
-        `;
-        
-        window.addEventListener('beforeinstallprompt', (e) => {
-            e.preventDefault();
-            deferredPrompt = e;
-            installButton.style.display = 'block';
-            document.body.appendChild(installButton);
-        });
-        
-        installButton.addEventListener('click', async () => {
-            if (deferredPrompt) {
-                deferredPrompt.prompt();
-                const { outcome } = await deferredPrompt.userChoice;
-                console.log(`User response to install prompt: ${outcome}`);
-                deferredPrompt = null;
-                installButton.style.display = 'none';
-            }
-        });
-        
-        // Hide install button after successful installation
-        window.addEventListener('appinstalled', () => {
-            console.log('PWA was installed');
-            installButton.style.display = 'none';
-        });
-        
-        // iOS install instructions
-        function isIOS() {
-            return /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
-        }
-        
-        function isInStandaloneMode() {
-            return ('standalone' in window.navigator) && (window.navigator.standalone);
-        }
-        
-        if (isIOS() && !isInStandaloneMode()) {
-            // Show iOS install instructions
-            const iosPrompt = document.createElement('div');
-            iosPrompt.innerHTML = `
-                <div style="position: fixed; bottom: 0; left: 0; right: 0; background: #1a73e8; color: white; padding: 16px; text-align: center; z-index: 1001; box-shadow: 0 -2px 8px rgba(0,0,0,0.3);">
-                    <p style="margin: 0 0 8px 0; font-size: 14px;">Install this app on your iPhone: tap <strong>Share</strong> <span style="font-size: 18px;">⎙</span> then <strong>Add to Home Screen</strong></p>
-                    <button onclick="this.parentElement.parentElement.remove()" style="background: white; color: #1a73e8; border: none; padding: 8px 16px; border-radius: 4px; font-size: 14px; font-weight: 500; cursor: pointer;">Got it</button>
-                </div>
-            `;
-            
-            // Only show after 3 seconds and if not shown before
-            if (!localStorage.getItem('iosPromptShown')) {
-                setTimeout(() => {
-                    document.body.appendChild(iosPrompt);
-                    localStorage.setItem('iosPromptShown', 'true');
-                }, 3000);
-            }
-        }
     </script>
 </body>
 </html>
