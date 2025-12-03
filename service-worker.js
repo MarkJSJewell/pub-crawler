@@ -1,6 +1,8 @@
-const CACHE_NAME = 'pub-crawler-v1';
+const CACHE_NAME = 'pub-crawler-v2';
 const urlsToCache = [
   './index.html',
+  './login.html',
+  './auth.js',
   './manifest.json'
 ];
 
@@ -20,10 +22,13 @@ self.addEventListener('install', event => {
 self.addEventListener('fetch', event => {
   const url = new URL(event.request.url);
   
-  // Always use network for API calls (Google Maps, Places API)
+  // Always use network for API calls (Google Maps, Firebase, Netlify)
   if (url.hostname.includes('googleapis.com') || 
       url.hostname.includes('maps.googleapis.com') ||
-      url.hostname.includes('places.googleapis.com')) {
+      url.hostname.includes('places.googleapis.com') ||
+      url.hostname.includes('firebaseapp.com') ||
+      url.hostname.includes('netlify.app') ||
+      url.hostname.includes('gstatic.com')) {
     event.respondWith(fetch(event.request));
     return;
   }
