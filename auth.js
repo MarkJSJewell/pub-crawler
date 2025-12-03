@@ -20,9 +20,16 @@ const BACKEND_URL = 'https://charming-puppy-e4d8d0.netlify.app/.netlify/function
 
 // Check authentication on page load
 firebase.auth().onAuthStateChanged((user) => {
-    if (!user && window.location.pathname !== '/login.html') {
+    const isLoginPage = window.location.pathname.includes('login.html');
+    
+    if (!user && !isLoginPage) {
         // User not logged in, redirect to login
+        console.log('Not authenticated, redirecting to login...');
         window.location.href = 'login.html';
+    } else if (user && isLoginPage) {
+        // User is logged in but on login page, redirect to app
+        console.log('Already authenticated, redirecting to app...');
+        window.location.href = 'index.html';
     } else if (user) {
         // User is logged in
         console.log('Logged in as:', user.email);
