@@ -1,0 +1,1455 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pub Crawl Planner</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Google Sans', 'Roboto', Arial, sans-serif;
+            background: #fff;
+            min-height: 100vh;
+            color: #202124;
+        }
+
+        .header {
+            background: #fff;
+            padding: 20px;
+            border-bottom: 1px solid #dadce0;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .header-left {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+
+        .google-logo {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 22px;
+            font-weight: 400;
+            color: #5f6368;
+        }
+
+        .logo-text {
+            display: flex;
+            gap: 2px;
+        }
+
+        .logo-text span:nth-child(1) { color: #4285f4; }
+        .logo-text span:nth-child(2) { color: #ea4335; }
+        .logo-text span:nth-child(3) { color: #fbbc04; }
+        .logo-text span:nth-child(4) { color: #4285f4; }
+        .logo-text span:nth-child(5) { color: #34a853; }
+        .logo-text span:nth-child(6) { color: #ea4335; }
+
+        .app-title {
+            font-size: 18px;
+            color: #5f6368;
+            font-weight: 400;
+        }
+
+        .search-container {
+            max-width: 800px;
+            margin: 24px auto;
+            padding: 0 20px;
+        }
+
+        .api-key-section {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 1px 2px 0 rgba(60,64,67,.3), 0 1px 3px 1px rgba(60,64,67,.15);
+            margin-bottom: 16px;
+        }
+
+        .api-key-section h3 {
+            margin-bottom: 12px;
+            color: #202124;
+            font-weight: 400;
+            font-size: 16px;
+        }
+
+        .api-key-section input {
+            width: 100%;
+            padding: 12px 16px;
+            border: 1px solid #dadce0;
+            border-radius: 24px;
+            font-size: 14px;
+            margin-bottom: 12px;
+        }
+
+        .api-key-section button {
+            background: #1a73e8;
+            color: white;
+            border: none;
+            padding: 10px 24px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 500;
+        }
+
+        .api-key-section .info {
+            background: #f1f3f4;
+            padding: 12px;
+            border-radius: 4px;
+            margin-top: 12px;
+            font-size: 12px;
+            line-height: 1.6;
+            color: #5f6368;
+        }
+
+        #api-status {
+            margin-top: 12px;
+            padding: 12px;
+            border-radius: 4px;
+            font-size: 14px;
+            display: none;
+        }
+
+        #api-status.success {
+            display: block;
+            background: #e6f4ea;
+            color: #137333;
+            border: 1px solid #34a853;
+        }
+
+        #api-status.error {
+            display: block;
+            background: #fce8e6;
+            color: #c5221f;
+            border: 1px solid #d93025;
+        }
+
+        .search-form {
+            background: white;
+            padding: 24px;
+            border-radius: 8px;
+            box-shadow: 0 1px 2px 0 rgba(60,64,67,.3), 0 1px 3px 1px rgba(60,64,67,.15);
+        }
+
+        .form-group {
+            margin-bottom: 16px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 500;
+            color: #3c4043;
+            font-size: 14px;
+        }
+
+        .form-group input, .form-group select {
+            width: 100%;
+            padding: 12px 16px;
+            border: 1px solid #dadce0;
+            border-radius: 4px;
+            font-size: 14px;
+            background: white;
+            color: #3c4043;
+        }
+
+        .form-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 16px;
+        }
+
+        .search-btn {
+            background: #1a73e8;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            font-size: 14px;
+            font-weight: 500;
+            border-radius: 4px;
+            cursor: pointer;
+            width: 100%;
+        }
+
+        .results-layout {
+            display: none;
+            max-width: 800px;
+            margin: 24px auto;
+            padding: 0 20px;
+        }
+
+        .results-sidebar {
+            background: #fff;
+        }
+
+        .results-map {
+            width: 100%;
+            height: 500px;
+            margin-top: 24px;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 1px 2px 0 rgba(60,64,67,.3), 0 1px 3px 1px rgba(60,64,67,.15);
+        }
+
+        .route-summary {
+            background: white;
+            padding: 16px 20px;
+            border-bottom: 1px solid #e8eaed;
+        }
+
+        .route-summary h3 {
+            margin-bottom: 12px;
+            color: #202124;
+            font-weight: 400;
+            font-size: 18px;
+        }
+
+        .route-summary p {
+            margin-bottom: 6px;
+            color: #5f6368;
+            font-size: 13px;
+        }
+
+        .pub-list {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .pub-card {
+            background: white;
+            border-bottom: 1px solid #e8eaed;
+            padding: 16px 20px;
+            cursor: pointer;
+        }
+
+        .pub-card:hover {
+            background: #f8f9fa;
+        }
+
+        .pub-card.priority {
+            border-left: 4px solid #fbbc04;
+            background: #fffcf5;
+        }
+
+        .pub-card.sports {
+            border-left: 4px solid #34a853;
+            background: #f0f9f4;
+        }
+
+        .pub-card.outdoor {
+            border-left: 4px solid #1a73e8;
+            background: #e8f0fe;
+        }
+
+        .pub-card.afternoontea {
+            border-left: 4px solid #ea4335;
+            background: #fce8e6;
+        }
+
+        .pub-card.happyhour {
+            border-left: 4px solid #fbbc04;
+            background: #fef7e0;
+        }
+
+        .pub-title {
+            font-size: 16px;
+            font-weight: 400;
+            color: #1a73e8;
+            margin-bottom: 4px;
+        }
+
+        .pub-badges {
+            display: flex;
+            gap: 4px;
+            margin-bottom: 6px;
+            flex-wrap: wrap;
+        }
+
+        .badge {
+            padding: 2px 8px;
+            border-radius: 12px;
+            font-size: 11px;
+            font-weight: 500;
+        }
+
+        .badge-priority {
+            background: #fef7e0;
+            color: #b06000;
+        }
+
+        .badge-sports {
+            background: #e6f4ea;
+            color: #137333;
+        }
+
+        .badge-outdoor {
+            background: #e8f0fe;
+            color: #1967d2;
+        }
+
+        .badge-afternoontea {
+            background: #fce8e6;
+            color: #c5221f;
+        }
+
+        .badge-happyhour {
+            background: #fef7e0;
+            color: #b06000;
+        }
+
+        .pub-rating {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            font-size: 13px;
+            color: #70757a;
+        }
+
+        .stars {
+            color: #fbbc04;
+        }
+
+        .pub-address {
+            color: #5f6368;
+            font-size: 13px;
+            margin-bottom: 8px;
+        }
+
+        .pub-description {
+            color: #3c4043;
+            font-size: 13px;
+            line-height: 1.6;
+            margin-bottom: 12px;
+        }
+
+        .btn {
+            padding: 8px 16px;
+            border: 1px solid #dadce0;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 13px;
+            font-weight: 500;
+            background: white;
+            color: #1a73e8;
+            margin-right: 8px;
+        }
+
+        .btn-primary {
+            background: #1a73e8;
+            color: white;
+            border: none;
+        }
+
+        #map {
+            height: 100%;
+            width: 100%;
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.5);
+            z-index: 1000;
+        }
+
+        .modal-content {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: white;
+            padding: 30px;
+            border-radius: 12px;
+            max-width: 500px;
+            width: 90%;
+            max-height: 80vh;
+            overflow-y: auto;
+        }
+
+        .modal-title {
+            font-size: 1.5rem;
+            color: #202124;
+            font-weight: 400;
+            margin-bottom: 20px;
+        }
+
+        .close {
+            float: right;
+            font-size: 28px;
+            cursor: pointer;
+            color: #5f6368;
+        }
+
+        .error {
+            color: #d93025;
+            background: #fce8e6;
+            padding: 16px 20px;
+            margin: 16px 20px;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 32px 20px;
+            color: #5f6368;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div class="header-left">
+            <div class="google-logo">
+                <div class="logo-text">
+                    <span>G</span><span>o</span><span>o</span><span>g</span><span>l</span><span>e</span>
+                </div>
+                <span style="font-size: 20px; color: #5f6368;">Maps</span>
+            </div>
+            <div class="app-title">| Pub Crawl Planner</div>
+        </div>
+    </div>
+
+    <div class="search-container">
+        <div class="api-key-section">
+            <div id="api-status" style="text-align: center; padding: 16px; color: #5f6368;">
+                Connecting to Google Maps...
+       </div>
+    </div>
+
+    <!-- User Info and Sign Out -->
+    <div style="position: fixed; top: 20px; right: 20px; z-index: 1000; display: flex; align-items: center; gap: 12px;">
+        <span id="user-email" style="color: #5f6368; font-size: 14px;"></span>
+        <button onclick="signOut()" style="background: #ea4335; color: white; border: none; padding: 10px 20px; border-radius: 4px; cursor: pointer; font-size: 14px; font-weight: 500; box-shadow: 0 1px 3px rgba(0,0,0,0.2);">
+            Sign Out
+        </button>
+    </div>
+
+        <div class="search-form">
+            <form id="search-form">
+                <div class="form-group">
+                    <label>Location</label>
+                    <input type="text" name="location" placeholder="Enter a location" required>
+                </div>
+                
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Number of stops</label>
+                        <select name="num-pubs" required>
+                            <option value="5" selected>5 stops</option>
+                            <option value="8">8 stops</option>
+                            <option value="10">10 stops</option>
+                        </select>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label>Venue type</label>
+                        <select name="historic-filter" required>
+                            <option value="all">All pubs</option>
+                            <option value="priority" selected>Historic pubs only</option>
+                            <option value="sports">Sports bars</option>
+                            <option value="outdoor">Outdoor seating</option>
+                            <option value="afternoontea">Afternoon tea</option>
+                            <option value="happyhour">Happy hours</option>
+                        </select>
+                    </div>
+                </div>
+                
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Maximum distance</label>
+                        <select name="max-distance" required>
+                            <option value="5000" selected>5 km</option>
+                            <option value="10000">10 km</option>
+                        </select>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label>Minimum rating</label>
+                        <select name="min-rating">
+                            <option value="3.5">3.5+</option>
+                            <option value="4.0" selected>4.0+</option>
+                            <option value="4.5">4.5+</option>
+                        </select>
+                    </div>
+                </div>
+                
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Opening hours</label>
+                        <select name="open-now">
+                            <option value="false">All pubs</option>
+                            <option value="true">Open now only</option>
+                        </select>
+                    </div>
+                    <div class="form-group"></div>
+                </div>
+                
+                <button type="submit" class="search-btn">Search</button>
+            </form>
+        </div>
+
+        <div class="results-layout" id="results-layout">
+            <div class="results-sidebar">
+                <div class="route-summary" id="route-summary"></div>
+                <div class="pub-list" id="pub-list"></div>
+            </div>
+            
+            <div class="results-map">
+                <div id="map"></div>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal" id="pub-modal">
+        <div class="modal-content">
+            <span class="close" id="modal-close">&times;</span>
+            <h3 class="modal-title" id="modal-title"></h3>
+            <div id="modal-body"></div>
+        </div>
+    </div>
+
+    <script>
+        console.log('Script starting...');
+        
+        let map, directionsService, directionsRenderer, geocoder;
+        let googleMapsLoaded = false;
+        let currentPubs = [];
+        let currentRouteData = null;
+        let apiKey = ''; // Store API key for new Places API calls
+
+        // STEP 1: API KEY MANAGEMENT
+        // API key is now fetched automatically from backend by auth.js
+
+
+        function initializeGoogleMaps() {
+            try {
+                geocoder = new google.maps.Geocoder();
+                directionsService = new google.maps.DirectionsService();
+                directionsRenderer = new google.maps.DirectionsRenderer({
+                    suppressMarkers: true,
+                    polylineOptions: {
+                        strokeColor: '#4285f4',
+                        strokeWeight: 5
+                    }
+                });
+                console.log('Google Maps services initialized');
+            } catch (error) {
+                console.error('Error initializing:', error);
+            }
+        }
+
+        // STEP 2: SEARCH AND ROUTE PLANNING
+        async function searchPubs(location, numPubs, historicFilter, maxDistance, minRating, openNow) {
+            showLoading();
+            
+            try {
+                // Geocode the location
+                const center = await geocodeLocation(location);
+                console.log('Center coordinates:', center);
+                
+                // Search for pubs
+                const pubs = await findPubs(center, maxDistance, historicFilter);
+                console.log('Found pubs:', pubs.length);
+                
+                // Filter pubs
+                const filteredPubs = filterPubs(pubs, historicFilter, minRating, openNow);
+                console.log('After filtering:', filteredPubs.length);
+                
+                if (filteredPubs.length === 0) {
+                    const filterType = historicFilter === 'sports' ? 'sports bars' : 
+                                     historicFilter === 'outdoor' ? 'pubs with outdoor seating' :
+                                     historicFilter === 'afternoontea' ? 'venues serving afternoon tea' :
+                                     historicFilter === 'happyhour' ? 'venues with happy hour' :
+                                     'historic pubs';
+                    showError(`No ${filterType} found in this area. Try a different location or increase the search radius.`);
+                    return;
+                }
+                
+                // Select best pubs for route
+                const selectedPubs = selectBestPubs(filteredPubs, numPubs, center);
+                console.log('Selected pubs:', selectedPubs.length);
+                
+                // Create optimized route
+                await createRoute(selectedPubs, center);
+                
+            } catch (error) {
+                console.error('Search error:', error);
+                showError('Search failed: ' + error.message);
+            }
+        }
+
+        function geocodeLocation(location) {
+            return new Promise((resolve, reject) => {
+                geocoder.geocode({ address: location }, (results, status) => {
+                    if (status === 'OK') {
+                        const loc = results[0].geometry.location;
+                        const coords = { lat: loc.lat(), lng: loc.lng() };
+                        console.log('Geocoded location:', location, '→', coords);
+                        console.log('Full address:', results[0].formatted_address);
+                        resolve(coords);
+                    } else {
+                        reject(new Error('Location not found'));
+                    }
+                });
+            });
+        }
+
+        async function findPubs(center, maxDistance, historicFilter) {
+            console.log('Searching for pubs around:', center, 'within', maxDistance, 'meters');
+            
+            // Determine which types to include based on filter
+            let includedTypes = ['pub'];
+            if (historicFilter === 'sports') {
+                // For sports bars, also include 'bar' type
+                includedTypes = ['pub', 'bar'];
+            } else if (historicFilter === 'afternoontea') {
+                // For afternoon tea, search for tea houses, cafes, restaurants, and hotels
+                includedTypes = ['tea_house', 'cafe', 'restaurant', 'hotel'];
+            } else if (historicFilter === 'happyhour') {
+                // For happy hour, search for pubs, bars, and cocktail bars
+                includedTypes = ['pub', 'bar', 'night_club'];
+            }
+            
+            console.log('Searching for types:', includedTypes);
+            
+            // Use new Places API (Text Search) - works more reliably
+            const url = 'https://places.googleapis.com/v1/places:searchText';
+            
+            // Build text query based on venue types
+            let textQuery = 'pub';
+            if (historicFilter === 'sports') {
+                textQuery = 'sports bar OR pub';
+            } else if (historicFilter === 'afternoontea') {
+                textQuery = 'afternoon tea OR tea room OR cafe';
+            } else if (historicFilter === 'happyhour') {
+                textQuery = 'bar OR pub';
+            } else if (historicFilter === 'outdoor') {
+                textQuery = 'pub OR bar';
+            } else if (historicFilter === 'priority') {
+                textQuery = 'historic pub OR traditional pub';
+            }
+            
+            const requestBody = {
+                textQuery: textQuery,
+                locationBias: {
+                    circle: {
+                        center: {
+                            latitude: center.lat,
+                            longitude: center.lng
+                        },
+                        radius: maxDistance
+                    }
+                },
+                rankPreference: 'DISTANCE',
+                maxResultCount: 20
+            };
+            
+            console.log('Places API request:', JSON.stringify(requestBody, null, 2));
+            
+            const headers = {
+                'Content-Type': 'application/json',
+                'X-Goog-Api-Key': apiKey,
+                'X-Goog-FieldMask': 'places.id,places.displayName,places.formattedAddress,places.location,places.rating,places.userRatingCount,places.types,places.editorialSummary,places.primaryType'
+            };
+            
+            try {
+                const response = await fetch(url, {
+                    method: 'POST',
+                    headers: headers,
+                    body: JSON.stringify(requestBody)
+                });
+                
+                const data = await response.json();
+                
+                if (!response.ok) {
+                    console.error('Places API error response:', data);
+                    throw new Error(`Places API error: ${response.status}`);
+                }
+                
+                console.log('Places API returned:', data.places?.length || 0, 'results');
+                console.log('Full API response:', data);
+                
+                if (!data.places || data.places.length === 0) {
+                    console.warn('No places returned from API');
+                    return [];
+                }
+                
+                // Convert new API format to old format for compatibility
+                const converted = data.places.map(place => {
+                    const lat = place.location?.latitude || 0;
+                    const lng = place.location?.longitude || 0;
+                    
+                    return {
+                        place_id: place.id,
+                        name: place.displayName?.text || 'Unknown',
+                        vicinity: place.formattedAddress || '',
+                        rating: place.rating || 0,
+                        user_ratings_total: place.userRatingCount || 0,
+                        types: place.types || [],
+                        geometry: {
+                            location: new google.maps.LatLng(lat, lng)
+                        },
+                        opening_hours: null,
+                        today_hours: null,
+                        editorial_summary: place.editorialSummary?.text || '',
+                        ai_summary: '',
+                        goodForWatchingSports: false,
+                        outdoorSeating: false,
+                        servesAfternoonTea: false
+                    };
+                });
+                
+                // Calculate and log distances for all pubs
+                console.log('All pubs with distances:');
+                converted.forEach(pub => {
+                    const distance = google.maps.geometry.spherical.computeDistanceBetween(
+                        new google.maps.LatLng(center.lat, center.lng),
+                        pub.geometry.location
+                    );
+                    console.log(`${pub.name}: ${Math.round(distance)}m, rating: ${pub.rating}, types: ${pub.types.join(', ')}, sports: ${pub.goodForWatchingSports}, summary: ${pub.editorial_summary.substring(0, 50)}`);
+                });
+                
+                // Return all converted results - filtering happens in filterPubs()
+                return converted;
+                
+            } catch (error) {
+                console.error('Places API error:', error);
+                throw new Error('Failed to search for pubs: ' + error.message);
+            }
+        }
+
+        function filterPubs(pubs, historicFilter, minRating, openNow) {
+            const historicKeywords = ['historic', 'old', 'traditional', 'victorian', 'heritage', 
+                                     'ancient', 'ye olde', 'coaching', 'inn', 'tavern',
+                                     'edwardian', 'tudor', 'medieval', 'georgian', 'stuart', 'roman'];
+            
+            const sportsKeywords = ['sports', 'sport', 'game', 'games', 'screen', 'screens', 'tv', 'televisions'];
+            
+            const outdoorKeywords = ['beer garden', 'garden', 'outdoor seating', 'patio', 'terrace', 'outdoor', 'al fresco', 'outside'];
+            
+            const afternoonTeaKeywords = ['afternoon tea', 'high tea', 'tea service', 'tea room', 'tea house', 'scones', 'tea cakes', 'tiered tea', 'cream tea'];
+            
+            const happyHourKeywords = ['happy hour', 'happy hr', 'drink specials', 'drink deals', '2 for 1', 'two for one', 'discounted drinks', 'half price', 'cheap drinks', 'cocktail hour', 'early bird'];
+            
+            console.log('Filtering', pubs.length, 'pubs with filter:', historicFilter, 'minRating:', minRating, 'openNow:', openNow);
+            
+            const filtered = pubs.filter(pub => {
+                // Rating filter
+                if (pub.rating && pub.rating < minRating) {
+                    console.log('Filtered out by rating:', pub.name, pub.rating);
+                    return false;
+                }
+                
+                // Open now filter
+                if (openNow === true || openNow === 'true') {
+                    if (!pub.opening_hours || !pub.opening_hours.open_now) {
+                        console.log('Filtered out by opening hours:', pub.name);
+                        return false;
+                    }
+                }
+                
+                // Afternoon tea filter
+                if (historicFilter === 'afternoontea') {
+                    const name = pub.name.toLowerCase();
+                    const summary = (pub.editorial_summary || '').toLowerCase();
+                    const aiSummary = (pub.ai_summary || '').toLowerCase();
+                    const combined = name + ' ' + summary + ' ' + aiSummary;
+                    
+                    // Check if it's a tea house, cafe, restaurant, or hotel
+                    const isTeaVenue = pub.types.includes('tea_house') || 
+                                      pub.types.includes('cafe') || 
+                                      pub.types.includes('restaurant') || 
+                                      pub.types.includes('hotel');
+                    
+                    // Check for afternoon tea keywords
+                    const hasAfternoonTeaKeyword = afternoonTeaKeywords.some(keyword => combined.includes(keyword));
+                    
+                    // Check servesAfternoonTea attribute
+                    const servesAfternoonTea = pub.servesAfternoonTea === true;
+                    
+                    // Must be a tea venue AND (have servesAfternoonTea OR contain afternoon tea keywords)
+                    if (!isTeaVenue || (!servesAfternoonTea && !hasAfternoonTeaKeyword)) {
+                        console.log('Filtered out (no afternoon tea):', pub.name, 
+                            'isTeaVenue:', isTeaVenue, 
+                            'servesAfternoonTea:', servesAfternoonTea, 
+                            'hasAfternoonTeaKeyword:', hasAfternoonTeaKeyword);
+                        return false;
+                    }
+                    
+                    console.log('Afternoon tea matched:', pub.name, 
+                        'servesAfternoonTea:', servesAfternoonTea, 
+                        'keywords:', hasAfternoonTeaKeyword);
+                }
+                
+                // Happy hour filter
+                if (historicFilter === 'happyhour') {
+                    const name = pub.name.toLowerCase();
+                    const summary = (pub.editorial_summary || '').toLowerCase();
+                    const aiSummary = (pub.ai_summary || '').toLowerCase();
+                    const combined = name + ' ' + summary + ' ' + aiSummary;
+                    
+                    // Check if it's a bar/pub type
+                    const isBarVenue = pub.types.includes('bar') || 
+                                      pub.types.includes('pub') || 
+                                      pub.types.includes('night_club');
+                    
+                    // Check for happy hour keywords
+                    const hasHappyHourKeyword = happyHourKeywords.some(keyword => combined.includes(keyword));
+                    
+                    // Must be a bar venue AND contain happy hour keywords
+                    // Note: Google Places API doesn't have a specific "hasHappyHour" attribute,
+                    // so we rely on keyword detection from descriptions, reviews, and website content
+                    if (!isBarVenue || !hasHappyHourKeyword) {
+                        console.log('Filtered out (no happy hour):', pub.name, 
+                            'isBarVenue:', isBarVenue, 
+                            'hasHappyHourKeyword:', hasHappyHourKeyword);
+                        return false;
+                    }
+                    
+                    console.log('Happy hour matched:', pub.name, 
+                        'keywords:', hasHappyHourKeyword);
+                }
+                
+                // Outdoor seating filter
+                if (historicFilter === 'outdoor') {
+                    const name = pub.name.toLowerCase();
+                    const summary = (pub.editorial_summary || '').toLowerCase();
+                    const aiSummary = (pub.ai_summary || '').toLowerCase();
+                    const combined = name + ' ' + summary + ' ' + aiSummary;
+                    
+                    // Check for outdoor keywords
+                    const hasOutdoorKeyword = outdoorKeywords.some(keyword => combined.includes(keyword));
+                    
+                    // Check outdoorSeating attribute
+                    const hasOutdoorSeating = pub.outdoorSeating === true;
+                    
+                    // Must have outdoorSeating attribute OR contain outdoor keywords
+                    if (!hasOutdoorSeating && !hasOutdoorKeyword) {
+                        console.log('Filtered out (no outdoor seating):', pub.name, 
+                            'hasOutdoorSeating:', hasOutdoorSeating, 
+                            'hasOutdoorKeyword:', hasOutdoorKeyword);
+                        return false;
+                    }
+                    
+                    console.log('Outdoor seating matched:', pub.name, 
+                        'hasOutdoorSeating:', hasOutdoorSeating, 
+                        'keywords:', hasOutdoorKeyword);
+                }
+                
+                // Sports bar filter
+                if (historicFilter === 'sports') {
+                    const name = pub.name.toLowerCase();
+                    const summary = (pub.editorial_summary || '').toLowerCase();
+                    const aiSummary = (pub.ai_summary || '').toLowerCase();
+                    const combined = name + ' ' + summary + ' ' + aiSummary;
+                    
+                    // Exclude movie theaters and cinemas
+                    const excludedTypes = ['movie_theater'];
+                    const hasExcludedType = excludedTypes.some(type => pub.types.includes(type));
+                    const hasCinemaInSummary = combined.includes('cinema');
+                    
+                    if (hasExcludedType || hasCinemaInSummary) {
+                        console.log('Filtered out (excluded venue type):', pub.name, 
+                            'hasExcludedType:', hasExcludedType, 
+                            'hasCinemaInSummary:', hasCinemaInSummary,
+                            'types:', pub.types);
+                        return false;
+                    }
+                    
+                    // Check if it's a bar type
+                    const isBarType = pub.types.includes('bar') || pub.types.includes('pub');
+                    
+                    // Check for sports keywords
+                    const hasSportsKeyword = sportsKeywords.some(keyword => combined.includes(keyword));
+                    
+                    // Check goodForWatchingSports attribute
+                    const goodForSports = pub.goodForWatchingSports === true;
+                    
+                    // Must be a bar/pub AND (have goodForWatchingSports OR contain sports keywords)
+                    if (!isBarType || (!goodForSports && !hasSportsKeyword)) {
+                        console.log('Filtered out (not sports bar):', pub.name, 
+                            'isBarType:', isBarType, 
+                            'goodForSports:', goodForSports, 
+                            'hasSportsKeyword:', hasSportsKeyword);
+                        return false;
+                    }
+                    
+                    console.log('Sports bar matched:', pub.name, 
+                        'goodForSports:', goodForSports, 
+                        'keywords:', hasSportsKeyword);
+                }
+                
+                // Historic filter
+                if (historicFilter === 'priority') {
+                    const name = pub.name.toLowerCase();
+                    const summary = (pub.editorial_summary || '').toLowerCase();
+                    const combined = name + ' ' + summary;
+                    const hasPriorityKeyword = historicKeywords.some(keyword => combined.includes(keyword));
+                    if (!hasPriorityKeyword) {
+                        console.log('Filtered out by keywords:', pub.name);
+                        return false;
+                    }
+                }
+                
+                return true;
+            });
+            
+            console.log('After filtering:', filtered.length, 'pubs remain');
+            return filtered;
+        }
+
+        function selectBestPubs(pubs, numPubs, center) {
+            // Calculate distance for each pub
+            const withDistance = pubs.map(pub => {
+                const location = pub.geometry.location;
+                const distance = google.maps.geometry.spherical.computeDistanceBetween(
+                    new google.maps.LatLng(center.lat, center.lng),
+                    location
+                );
+                
+                return { ...pub, distance };
+            });
+            
+            // Sort by distance first (closest first), then by rating as tiebreaker
+            withDistance.sort((a, b) => {
+                const distanceDiff = a.distance - b.distance;
+                if (Math.abs(distanceDiff) > 100) { // If distance difference > 100m, use distance
+                    return distanceDiff;
+                }
+                // Otherwise use rating as tiebreaker
+                return (b.rating || 0) - (a.rating || 0);
+            });
+            
+            console.log('Sorted pubs by distance:');
+            withDistance.slice(0, 10).forEach((p, i) => {
+                console.log(`${i+1}. ${p.name} - ${Math.round(p.distance)}m, rating: ${p.rating}`);
+            });
+            
+            const selected = withDistance.slice(0, parseInt(numPubs));
+            console.log('Selected', selected.length, 'pubs for route');
+            
+            return selected;
+        }
+
+        async function createRoute(pubs, center) {
+            if (pubs.length === 0) return;
+            
+            // Optimize route order (simple nearest-neighbor algorithm)
+            const optimized = optimizeRoute(pubs, center);
+            currentPubs = optimized;
+            
+            // Calculate route with Google Directions
+            await calculateDirections(optimized);
+            
+            // Display results
+            displayResults(optimized);
+        }
+
+        function optimizeRoute(pubs, start) {
+            const ordered = [];
+            const remaining = [...pubs];
+            let current = start;
+            
+            while (remaining.length > 0) {
+                // Find nearest pub to current location
+                let nearest = 0;
+                let minDist = Infinity;
+                
+                remaining.forEach((pub, idx) => {
+                    const loc = pub.geometry.location;
+                    const dist = google.maps.geometry.spherical.computeDistanceBetween(
+                        new google.maps.LatLng(current.lat, current.lng),
+                        loc
+                    );
+                    
+                    if (dist < minDist) {
+                        minDist = dist;
+                        nearest = idx;
+                    }
+                });
+                
+                const pub = remaining.splice(nearest, 1)[0];
+                ordered.push(pub);
+                current = { lat: pub.geometry.location.lat(), lng: pub.geometry.location.lng() };
+            }
+            
+            return ordered;
+        }
+
+        function calculateDirections(pubs) {
+            return new Promise((resolve, reject) => {
+                if (pubs.length < 2) {
+                    resolve();
+                    return;
+                }
+                
+                const waypoints = pubs.slice(1, -1).map(pub => ({
+                    location: pub.geometry.location,
+                    stopover: true
+                }));
+                
+                const request = {
+                    origin: pubs[0].geometry.location,
+                    destination: pubs[pubs.length - 1].geometry.location,
+                    waypoints: waypoints,
+                    travelMode: 'WALKING'
+                };
+                
+                directionsService.route(request, (result, status) => {
+                    if (status === 'OK') {
+                        currentRouteData = result;
+                        resolve(result);
+                    } else {
+                        console.error('Directions failed:', status);
+                        resolve(null);
+                    }
+                });
+            });
+        }
+
+        function displayResults(pubs) {
+            // Initialize map
+            const bounds = new google.maps.LatLngBounds();
+            pubs.forEach(pub => bounds.extend(pub.geometry.location));
+            
+            map = new google.maps.Map(document.getElementById('map'), {
+                zoom: 14,
+                center: bounds.getCenter(),
+                zoomControl: true,
+                mapTypeControl: false,
+                streetViewControl: false,
+                fullscreenControl: true
+            });
+            
+            map.fitBounds(bounds);
+            
+            // Show route on map
+            if (currentRouteData) {
+                directionsRenderer.setMap(map);
+                directionsRenderer.setDirections(currentRouteData);
+            }
+            
+            // Add markers
+            pubs.forEach((pub, index) => {
+                const marker = new google.maps.Marker({
+                    position: pub.geometry.location,
+                    map: map,
+                    label: {
+                        text: (index + 1).toString(),
+                        color: 'white',
+                        fontWeight: 'bold'
+                    },
+                    title: pub.name
+                });
+                
+                marker.addListener('click', () => showPubDetails(pub));
+            });
+            
+            // Display summary
+            displaySummary(pubs);
+            
+            // Display pub list
+            displayPubList(pubs);
+            
+            // Show results layout
+            document.getElementById('results-layout').style.display = 'block';
+            
+            // Scroll to results
+            setTimeout(() => {
+                document.getElementById('results-layout').scrollIntoView({ behavior: 'smooth', block: 'start' });
+            }, 100);
+        }
+
+        function displaySummary(pubs) {
+            const summary = document.getElementById('route-summary');
+            const totalDistance = currentRouteData ? 
+                currentRouteData.routes[0].legs.reduce((sum, leg) => sum + leg.distance.value, 0) : 0;
+            const totalDuration = currentRouteData ?
+                currentRouteData.routes[0].legs.reduce((sum, leg) => sum + leg.duration.value, 0) : 0;
+            
+            summary.innerHTML = `
+                <h3>Your Pub Crawl Route</h3>
+                <p><strong>${pubs.length} stops</strong></p>
+                <p>${(totalDistance / 1000).toFixed(1)} km walking distance</p>
+                <p>~${Math.round(totalDuration / 60)} minutes walking time</p>
+                <p style="font-size: 12px; color: #5f6368; margin-top: 12px; line-height: 1.5;">
+                    <strong>Route optimization:</strong> Pubs are selected by proximity to your search location and ordered using a nearest-neighbor algorithm to minimize walking distance. The walking route is calculated by Google Maps Directions API.
+                </p>
+            `;
+        }
+
+        function displayPubList(pubs) {
+            const list = document.getElementById('pub-list');
+            const historicKeywords = ['historic', 'old', 'traditional', 'victorian', 'heritage', 
+                                     'ancient', 'ye olde', 'coaching', 'inn', 'tavern',
+                                     'edwardian', 'tudor', 'medieval', 'georgian', 'stuart', 'roman'];
+            
+            const sportsKeywords = ['sports', 'sport', 'game', 'games', 'screen', 'screens', 'tv', 'televisions'];
+            
+            const outdoorKeywords = ['beer garden', 'garden', 'outdoor seating', 'patio', 'terrace', 'outdoor', 'al fresco', 'outside'];
+            
+            const afternoonTeaKeywords = ['afternoon tea', 'high tea', 'tea service', 'tea room', 'tea house', 'scones', 'tea cakes', 'tiered tea', 'cream tea'];
+            
+            const happyHourKeywords = ['happy hour', 'happy hr', 'drink specials', 'drink deals', '2 for 1', 'two for one', 'discounted drinks', 'half price', 'cheap drinks', 'cocktail hour', 'early bird'];
+            
+            list.innerHTML = pubs.map((pub, index) => {
+                const name = pub.name.toLowerCase();
+                const summary = (pub.editorial_summary || '').toLowerCase();
+                const aiSummary = (pub.ai_summary || '').toLowerCase();
+                const combined = name + ' ' + summary + ' ' + aiSummary;
+                
+                // Check which historic keywords match
+                const matchedHistoricKeywords = historicKeywords.filter(kw => combined.includes(kw));
+                const hasHistoric = matchedHistoricKeywords.length > 0;
+                
+                // Check which sports keywords match
+                const matchedSportsKeywords = sportsKeywords.filter(kw => combined.includes(kw));
+                const hasSportsKeyword = matchedSportsKeywords.length > 0;
+                const isSportsBar = pub.goodForWatchingSports || hasSportsKeyword;
+                
+                // Check which outdoor keywords match
+                const matchedOutdoorKeywords = outdoorKeywords.filter(kw => combined.includes(kw));
+                const hasOutdoorKeyword = matchedOutdoorKeywords.length > 0;
+                const hasOutdoorSeating = pub.outdoorSeating || hasOutdoorKeyword;
+                
+                // Check which afternoon tea keywords match
+                const matchedAfternoonTeaKeywords = afternoonTeaKeywords.filter(kw => combined.includes(kw));
+                const hasAfternoonTeaKeyword = matchedAfternoonTeaKeywords.length > 0;
+                const servesAfternoonTea = pub.servesAfternoonTea || hasAfternoonTeaKeyword;
+                
+                // Check which happy hour keywords match
+                const matchedHappyHourKeywords = happyHourKeywords.filter(kw => combined.includes(kw));
+                const hasHappyHour = matchedHappyHourKeywords.length > 0;
+                
+                // Determine card styling (priority order: happy hour > afternoon tea > outdoor > sports > historic)
+                let priorityClass = '';
+                if (hasHappyHour) {
+                    priorityClass = 'happyhour';
+                } else if (servesAfternoonTea) {
+                    priorityClass = 'afternoontea';
+                } else if (hasOutdoorSeating) {
+                    priorityClass = 'outdoor';
+                } else if (isSportsBar) {
+                    priorityClass = 'sports';
+                } else if (hasHistoric) {
+                    priorityClass = 'priority';
+                }
+                
+                // Build badges
+                let badgesHTML = '<div class="pub-badges">';
+                
+                if (hasHistoric) {
+                    const keywordText = matchedHistoricKeywords.map(kw => kw.charAt(0).toUpperCase() + kw.slice(1)).join(', ');
+                    badgesHTML += `<span class="badge badge-priority">Historic</span>
+                        <span style="font-size: 11px; color: #5f6368; margin-left: 4px;">(${keywordText})</span>`;
+                }
+                
+                if (isSportsBar) {
+                    let sportsText = '';
+                    if (pub.goodForWatchingSports) {
+                        sportsText = 'Good for watching sports';
+                    }
+                    if (hasSportsKeyword) {
+                        const keywordText = matchedSportsKeywords.map(kw => kw.charAt(0).toUpperCase() + kw.slice(1)).join(', ');
+                        sportsText += sportsText ? `, ${keywordText}` : keywordText;
+                    }
+                    badgesHTML += `<span class="badge badge-sports">Sports Bar</span>
+                        <span style="font-size: 11px; color: #5f6368; margin-left: 4px;">(${sportsText})</span>`;
+                }
+                
+                if (hasOutdoorSeating) {
+                    let outdoorText = '';
+                    if (pub.outdoorSeating) {
+                        outdoorText = 'Outdoor seating available';
+                    }
+                    if (hasOutdoorKeyword) {
+                        const keywordText = matchedOutdoorKeywords.map(kw => kw.charAt(0).toUpperCase() + kw.slice(1)).join(', ');
+                        outdoorText += outdoorText ? `, ${keywordText}` : keywordText;
+                    }
+                    badgesHTML += `<span class="badge badge-outdoor">Outdoor Seating</span>
+                        <span style="font-size: 11px; color: #5f6368; margin-left: 4px;">(${outdoorText})</span>`;
+                }
+                
+                if (servesAfternoonTea) {
+                    let teaText = '';
+                    if (pub.servesAfternoonTea) {
+                        teaText = 'Serves afternoon tea';
+                    }
+                    if (hasAfternoonTeaKeyword) {
+                        const keywordText = matchedAfternoonTeaKeywords.map(kw => kw.charAt(0).toUpperCase() + kw.slice(1)).join(', ');
+                        teaText += teaText ? `, ${keywordText}` : keywordText;
+                    }
+                    badgesHTML += `<span class="badge badge-afternoontea">Afternoon Tea</span>
+                        <span style="font-size: 11px; color: #5f6368; margin-left: 4px;">(${teaText})</span>`;
+                }
+                
+                if (hasHappyHour) {
+                    const keywordText = matchedHappyHourKeywords.map(kw => kw.charAt(0).toUpperCase() + kw.slice(1)).join(', ');
+                    badgesHTML += `<span class="badge badge-happyhour">Happy Hour</span>
+                        <span style="font-size: 11px; color: #5f6368; margin-left: 4px;">(${keywordText})</span>`;
+                }
+                
+                badgesHTML += '</div>';
+                
+                // Only show badges if there are any
+                const badgesDisplay = (hasHistoric || isSportsBar || hasOutdoorSeating || servesAfternoonTea || hasHappyHour) ? badgesHTML : '';
+                
+                // AI Summary (try AI summary first, fall back to editorial summary)
+                const summaryText = pub.ai_summary || pub.editorial_summary;
+                const summaryLabel = pub.ai_summary ? 'AI Summary' : 'About this pub';
+                
+                const summaryDisplay = summaryText ? 
+                    `<div class="pub-description" style="background: #f8f9fa; padding: 8px; border-radius: 4px; margin-bottom: 8px;">
+                        <strong style="font-size: 12px; color: #5f6368;">${summaryLabel}:</strong><br>
+                        ${summaryText}
+                    </div>` : '';
+                
+                // Today's hours
+                const hoursDisplay = pub.today_hours ? 
+                    `<div style="font-size: 13px; color: #5f6368; margin-bottom: 4px;">
+                        <strong>Today:</strong> ${pub.today_hours}
+                    </div>` : '';
+                
+                return `
+                    <div class="pub-card ${priorityClass}" onclick="showPubDetails(currentPubs[${index}])">
+                        <div class="pub-title">${index + 1}. ${pub.name}</div>
+                        ${badgesDisplay}
+                        <div class="pub-rating">
+                            <span class="stars">${'★'.repeat(Math.floor(pub.rating || 0))}</span>
+                            ${pub.rating ? pub.rating.toFixed(1) : 'N/A'}
+                            ${pub.user_ratings_total ? `(${pub.user_ratings_total})` : ''}
+                        </div>
+                        <div class="pub-address">${pub.vicinity || ''}</div>
+                        ${hoursDisplay}
+                        ${summaryDisplay}
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function showPubDetails(pub) {
+            const modal = document.getElementById('pub-modal');
+            const title = document.getElementById('modal-title');
+            const body = document.getElementById('modal-body');
+            
+            // Check for historic keywords
+            const historicKeywords = ['historic', 'old', 'traditional', 'victorian', 'heritage', 
+                                     'ancient', 'ye olde', 'coaching', 'inn', 'tavern',
+                                     'edwardian', 'tudor', 'medieval', 'georgian', 'stuart', 'roman'];
+            const name = pub.name.toLowerCase();
+            const summary = (pub.editorial_summary || '').toLowerCase();
+            const aiSummary = (pub.ai_summary || '').toLowerCase();
+            const combined = name + ' ' + summary + ' ' + aiSummary;
+            const matchedHistoricKeywords = historicKeywords.filter(kw => combined.includes(kw));
+            
+            // Check for sports keywords
+            const sportsKeywords = ['sports', 'sport', 'game', 'games', 'screen', 'screens', 'tv', 'televisions'];
+            const matchedSportsKeywords = sportsKeywords.filter(kw => combined.includes(kw));
+            const isSportsBar = pub.goodForWatchingSports || matchedSportsKeywords.length > 0;
+            
+            // Check for outdoor keywords
+            const outdoorKeywords = ['beer garden', 'garden', 'outdoor seating', 'patio', 'terrace', 'outdoor', 'al fresco', 'outside'];
+            const matchedOutdoorKeywords = outdoorKeywords.filter(kw => combined.includes(kw));
+            const hasOutdoorSeating = pub.outdoorSeating || matchedOutdoorKeywords.length > 0;
+            
+            // Check for afternoon tea keywords
+            const afternoonTeaKeywords = ['afternoon tea', 'high tea', 'tea service', 'tea room', 'tea house', 'scones', 'tea cakes', 'tiered tea', 'cream tea'];
+            const matchedAfternoonTeaKeywords = afternoonTeaKeywords.filter(kw => combined.includes(kw));
+            const servesAfternoonTea = pub.servesAfternoonTea || matchedAfternoonTeaKeywords.length > 0;
+            
+            // Check for happy hour keywords
+            const happyHourKeywords = ['happy hour', 'happy hr', 'drink specials', 'drink deals', '2 for 1', 'two for one', 'discounted drinks', 'half price', 'cheap drinks', 'cocktail hour', 'early bird'];
+            const matchedHappyHourKeywords = happyHourKeywords.filter(kw => combined.includes(kw));
+            const hasHappyHour = matchedHappyHourKeywords.length > 0;
+            
+            let specialInfo = '';
+            
+            if (matchedHistoricKeywords.length > 0) {
+                const keywordText = matchedHistoricKeywords.map(kw => kw.charAt(0).toUpperCase() + kw.slice(1)).join(', ');
+                specialInfo += `
+                    <p style="background: #fef7e0; padding: 8px; border-radius: 4px; border-left: 4px solid #fbbc04; margin-bottom: 8px;">
+                        <strong>🏛️ Historic Pub</strong><br>
+                        <span style="font-size: 13px;">Identified by keywords: ${keywordText}</span>
+                    </p>`;
+            }
+            
+            if (isSportsBar) {
+                let sportsText = '';
+                if (pub.goodForWatchingSports) {
+                    sportsText = 'Google Maps indicates this is good for watching sports';
+                }
+                if (matchedSportsKeywords.length > 0) {
+                    const keywordText = matchedSportsKeywords.map(kw => kw.charAt(0).toUpperCase() + kw.slice(1)).join(', ');
+                    if (sportsText) {
+                        sportsText += `<br>Keywords found: ${keywordText}`;
+                    } else {
+                        sportsText = `Keywords found: ${keywordText}`;
+                    }
+                }
+                specialInfo += `
+                    <p style="background: #e6f4ea; padding: 8px; border-radius: 4px; border-left: 4px solid #34a853; margin-bottom: 8px;">
+                        <strong>⚽ Sports Bar</strong><br>
+                        <span style="font-size: 13px;">${sportsText}</span>
+                    </p>`;
+            }
+            
+            if (hasOutdoorSeating) {
+                let outdoorText = '';
+                if (pub.outdoorSeating) {
+                    outdoorText = 'Google Maps indicates outdoor seating is available';
+                }
+                if (matchedOutdoorKeywords.length > 0) {
+                    const keywordText = matchedOutdoorKeywords.map(kw => kw.charAt(0).toUpperCase() + kw.slice(1)).join(', ');
+                    if (outdoorText) {
+                        outdoorText += `<br>Keywords found: ${keywordText}`;
+                    } else {
+                        outdoorText = `Keywords found: ${keywordText}`;
+                    }
+                }
+                specialInfo += `
+                    <p style="background: #e8f0fe; padding: 8px; border-radius: 4px; border-left: 4px solid #1a73e8; margin-bottom: 8px;">
+                        <strong>🌳 Outdoor Seating</strong><br>
+                        <span style="font-size: 13px;">${outdoorText}</span>
+                    </p>`;
+            }
+            
+            if (servesAfternoonTea) {
+                let teaText = '';
+                if (pub.servesAfternoonTea) {
+                    teaText = 'Google Maps indicates afternoon tea is served here';
+                }
+                if (matchedAfternoonTeaKeywords.length > 0) {
+                    const keywordText = matchedAfternoonTeaKeywords.map(kw => kw.charAt(0).toUpperCase() + kw.slice(1)).join(', ');
+                    if (teaText) {
+                        teaText += `<br>Keywords found: ${keywordText}`;
+                    } else {
+                        teaText = `Keywords found: ${keywordText}`;
+                    }
+                }
+                specialInfo += `
+                    <p style="background: #fce8e6; padding: 8px; border-radius: 4px; border-left: 4px solid #ea4335; margin-bottom: 8px;">
+                        <strong>🫖 Afternoon Tea</strong><br>
+                        <span style="font-size: 13px;">${teaText}</span>
+                    </p>`;
+            }
+            
+            if (hasHappyHour) {
+                const keywordText = matchedHappyHourKeywords.map(kw => kw.charAt(0).toUpperCase() + kw.slice(1)).join(', ');
+                specialInfo += `
+                    <p style="background: #fef7e0; padding: 8px; border-radius: 4px; border-left: 4px solid #fbbc04; margin-bottom: 8px;">
+                        <strong>🍻 Happy Hour</strong><br>
+                        <span style="font-size: 13px;">Keywords found: ${keywordText}</span>
+                    </p>`;
+            }
+            
+            let summaryHTML = '';
+            const summaryText = pub.ai_summary || pub.editorial_summary;
+            if (summaryText) {
+                const summaryLabel = pub.ai_summary ? 'AI Summary (from Google Maps)' : 'About this pub';
+                summaryHTML = `
+                    <div style="background: #f8f9fa; padding: 12px; border-radius: 4px; margin: 12px 0;">
+                        <strong style="color: #5f6368;">${summaryLabel}:</strong><br>
+                        <p style="margin-top: 8px; line-height: 1.6;">${summaryText}</p>
+                    </div>`;
+            }
+            
+            let hoursHTML = '';
+            if (pub.today_hours) {
+                hoursHTML = `<p><strong>Today's Hours:</strong> ${pub.today_hours}</p>`;
+            }
+            
+            title.textContent = pub.name;
+            body.innerHTML = `
+                ${specialInfo}
+                <p><strong>Rating:</strong> ${pub.rating || 'N/A'} (${pub.user_ratings_total || 0} reviews)</p>
+                <p><strong>Address:</strong> ${pub.vicinity || 'N/A'}</p>
+                ${pub.opening_hours ? `<p><strong>Status:</strong> ${pub.opening_hours.open_now ? '✓ Open now' : '✗ Closed'}</p>` : ''}
+                ${hoursHTML}
+                ${summaryHTML}
+                <p style="margin-top: 16px;">
+                    <a href="https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(pub.name)}&query_place_id=${pub.place_id}" 
+                       target="_blank" class="btn btn-primary">View on Google Maps</a>
+                </p>
+            `;
+            
+            modal.style.display = 'block';
+        }
+
+        function showLoading() {
+            const layout = document.getElementById('results-layout');
+            layout.style.display = 'block';
+            document.getElementById('route-summary').innerHTML = '<div class="loading">Searching for pubs...</div>';
+            document.getElementById('pub-list').innerHTML = '';
+        }
+
+        function showError(message) {
+            const layout = document.getElementById('results-layout');
+            layout.style.display = 'block';
+            document.getElementById('route-summary').innerHTML = `<div class="error">${message}</div>`;
+            document.getElementById('pub-list').innerHTML = '';
+            document.getElementById('map').innerHTML = '';
+            
+            // Scroll to error
+            setTimeout(() => {
+                layout.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            }, 100);
+        }
+
+        // Event listeners
+        document.addEventListener('DOMContentLoaded', function() {
+            const form = document.getElementById('search-form');
+            if (form) {
+                form.addEventListener('submit', async (e) => {
+                    e.preventDefault();
+                    
+                    if (!window.googleMapsLoaded) {
+                        alert('Please wait for Google Maps to finish loading');
+                        return;
+                    }
+                    
+                    const formData = new FormData(e.target);
+                    await searchPubs(
+                        formData.get('location'),
+                        formData.get('num-pubs'),
+                        formData.get('historic-filter'),
+                        formData.get('max-distance'),
+                        parseFloat(formData.get('min-rating')),
+                        formData.get('open-now') === 'true'
+                    );
+                });
+            }
+            
+            // Modal close
+            document.getElementById('modal-close').addEventListener('click', () => {
+                document.getElementById('pub-modal').style.display = 'none';
+            });
+            
+            window.addEventListener('click', (e) => {
+                const modal = document.getElementById('pub-modal');
+                if (e.target === modal) {
+                    modal.style.display = 'none';
+                }
+            });
+        });
+    </script>
+    
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-auth-compat.js"></script>
+
+    <!-- Authentication Module -->
+    <script src="auth.js"></script>
+
+</body>
+</html>
