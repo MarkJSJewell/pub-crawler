@@ -530,23 +530,6 @@
 
         // STEP 1: API KEY MANAGEMENT
             
-            apiKey = key; // Store globally for new Places API
-            
-            console.log('Loading Google Maps API...');
-            
-            statusDiv.className = '';
-            statusDiv.style.display = 'block';
-            statusDiv.textContent = 'Connecting to Google Maps...';
-            
-            // Set up callback
-            window.initGoogleMapsCallback = function() {
-                console.log('Google Maps loaded successfully');
-                googleMapsLoaded = true;
-                initializeGoogleMaps();
-                statusDiv.className = 'success';
-                statusDiv.textContent = '✓ Google Maps connected successfully! You can now search for pubs.';
-            };
-            
             window.gm_authFailure = function() {
                 statusDiv.className = 'error';
                 statusDiv.textContent = '✗ Authentication failed. Please check your API key and ensure all required APIs are enabled.';
