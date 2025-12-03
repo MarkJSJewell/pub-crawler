@@ -422,14 +422,18 @@
 
     <div class="search-container">
         <div class="api-key-section">
-            <h3>API Configuration</h3>
-            <input type="text" id="api-key-input" placeholder="Enter your Google Maps API Key">
-            <button onclick="saveApiKey()">Connect</button>
-            <div id="api-status"></div>
-            <div class="info">
-                Enable Places API (New), Maps JavaScript API, Geocoding API, Directions API. Make sure to enable the NEW Places API for text search functionality.
-            </div>
-        </div>
+            <div id="api-status" style="text-align: center; padding: 16px; color: #5f6368;">
+                Connecting to Google Maps...
+       </div>
+    </div>
+
+    <!-- User Info and Sign Out -->
+    <div style="position: fixed; top: 20px; right: 20px; z-index: 1000; display: flex; align-items: center; gap: 12px;">
+        <span id="user-email" style="color: #5f6368; font-size: 14px;"></span>
+        <button onclick="signOut()" style="background: #ea4335; color: white; border: none; padding: 10px 20px; border-radius: 4px; cursor: pointer; font-size: 14px; font-weight: 500; box-shadow: 0 1px 3px rgba(0,0,0,0.2);">
+            Sign Out
+        </button>
+    </div>
 
         <div class="search-form">
             <form id="search-form">
@@ -525,15 +529,6 @@
         let apiKey = ''; // Store API key for new Places API calls
 
         // STEP 1: API KEY MANAGEMENT
-function saveApiKey() {
-            const key = document.getElementById('api-key-input').value.trim();
-            const statusDiv = document.getElementById('api-status');
-            
-            if (!key) {
-                statusDiv.className = 'error';
-                statusDiv.textContent = 'Please enter an API key';
-                return;
-            }
             
             apiKey = key; // Store globally for new Places API
             
