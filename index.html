@@ -529,22 +529,8 @@
         let apiKey = ''; // Store API key for new Places API calls
 
         // STEP 1: API KEY MANAGEMENT
-            
-            window.gm_authFailure = function() {
-                statusDiv.className = 'error';
-                statusDiv.textContent = '✗ Authentication failed. Please check your API key and ensure all required APIs are enabled.';
-            };
-            
-            // Load script
-            const script = document.createElement('script');
-            script.src = `https://maps.googleapis.com/maps/api/js?key=${apiKey}&libraries=places,geometry&callback=initGoogleMapsCallback`;
-            script.async = true;
-            script.defer = true;
-            script.onerror = () => {
-                statusDiv.className = 'error';
-                statusDiv.textContent = '✗ Failed to load Google Maps. Please check your internet connection.';
-            };
-            document.head.appendChild(script);
+        // API key is now fetched automatically from backend by auth.js
+
 
         function initializeGoogleMaps() {
             try {
@@ -1427,8 +1413,8 @@
                 form.addEventListener('submit', async (e) => {
                     e.preventDefault();
                     
-                    if (!googleMapsLoaded) {
-                        alert('Please connect your API key first');
+                    if (!window.googleMapsLoaded) {
+                        alert('Please wait for Google Maps to finish loading');
                         return;
                     }
                     
