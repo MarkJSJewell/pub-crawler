@@ -589,145 +589,123 @@
             }
         }
 
-        function geocodeLocation(location) {
-            return new Promise((resolve, reject) => {
-                geocoder.geocode({ address: location }, (results, status) => {
-                    if (status === 'OK') {
-                        const loc = results[0].geometry.location;
-                        const coords = { lat: loc.lat(), lng: loc.lng() };
-                        console.log('Geocoded location:', location, '→', coords);
-                        console.log('Full address:', results[0].formatted_address);
-                        resolve(coords);
-                    } else {
-                        reject(new Error('Location not found'));
-                    }
-                });
-            });
-        }
-
-        async function findPubs(center, maxDistance, historicFilter) {
-            console.log('Searching for pubs around:', center, 'within', maxDistance, 'meters');
-            
-            // Determine which types to include based on filter
-            let includedTypes = ['pub'];
-            if (historicFilter === 'sports') {
-                // For sports bars, also include 'bar' type
-                includedTypes = ['pub', 'bar'];
-            } else if (historicFilter === 'afternoontea') {
-                // For afternoon tea, search for tea houses, cafes, restaurants, and hotels
-                includedTypes = ['tea_house', 'cafe', 'restaurant', 'hotel'];
-            } else if (historicFilter === 'happyhour') {
-                // For happy hour, search for pubs, bars, and cocktail bars
-                includedTypes = ['pub', 'bar', 'night_club'];
-            }
-            
-            console.log('Searching for types:', includedTypes);
-            
-            // Use new Places API (Text Search) - works more reliably
-            const url = 'https://places.googleapis.com/v1/places:searchText';
-            
-            // Build text query based on venue types
-            let textQuery = 'pub';
-            if (historicFilter === 'sports') {
-                textQuery = 'sports bar OR pub';
-            } else if (historicFilter === 'afternoontea') {
-                textQuery = 'afternoon tea OR tea room OR cafe';
-            } else if (historicFilter === 'happyhour') {
-                textQuery = 'bar OR pub';
-            } else if (historicFilter === 'outdoor') {
-                textQuery = 'pub OR bar';
-            } else if (historicFilter === 'priority') {
-                textQuery = 'historic pub OR traditional pub';
-            }
-            
-            const requestBody = {
-                textQuery: textQuery,
-                locationBias: {
-                    circle: {
-                        center: {
-                            latitude: center.lat,
-                            longitude: center.lng
-                        },
-                        radius: maxDistance
-                    }
-                },
-                rankPreference: 'DISTANCE',
-                maxResultCount: 20
-            };
-            
-            console.log('Places API request:', JSON.stringify(requestBody, null, 2));
-            
-            const headers = {
+async function geocodeLocation(location) {
+    try {
+        const user = firebase.auth().currentUser;
+        if (!user) throw new Error('User not authenticated');
+        const token = await user.getIdToken();
+        
+        const response = await fetch('https://pub-crawler-app.netlify.app/.netlify/functions/geocode', {
+            method: 'POST',
+            headers: {
                 'Content-Type': 'application/json',
-                'X-Goog-Api-Key': apiKey,
-                'X-Goog-FieldMask': 'places.id,places.displayName,places.formattedAddress,places.location,places.rating,places.userRatingCount,places.types,places.editorialSummary,places.primaryType'
-            };
-            
-            try {
-                const response = await fetch(url, {
-                    method: 'POST',
-                    headers: headers,
-                    body: JSON.stringify(requestBody)
-                });
-                
-                const data = await response.json();
-                
-                if (!response.ok) {
-                    console.error('Places API error response:', data);
-                    throw new Error(`Places API error: ${response.status}`);
-                }
-                
-                console.log('Places API returned:', data.places?.length || 0, 'results');
-                console.log('Full API response:', data);
-                
-                if (!data.places || data.places.length === 0) {
-                    console.warn('No places returned from API');
-                    return [];
-                }
-                
-                // Convert new API format to old format for compatibility
-                const converted = data.places.map(place => {
-                    const lat = place.location?.latitude || 0;
-                    const lng = place.location?.longitude || 0;
-                    
-                    return {
-                        place_id: place.id,
-                        name: place.displayName?.text || 'Unknown',
-                        vicinity: place.formattedAddress || '',
-                        rating: place.rating || 0,
-                        user_ratings_total: place.userRatingCount || 0,
-                        types: place.types || [],
-                        geometry: {
-                            location: new google.maps.LatLng(lat, lng)
-                        },
-                        opening_hours: null,
-                        today_hours: null,
-                        editorial_summary: place.editorialSummary?.text || '',
-                        ai_summary: '',
-                        goodForWatchingSports: false,
-                        outdoorSeating: false,
-                        servesAfternoonTea: false
-                    };
-                });
-                
-                // Calculate and log distances for all pubs
-                console.log('All pubs with distances:');
-                converted.forEach(pub => {
-                    const distance = google.maps.geometry.spherical.computeDistanceBetween(
-                        new google.maps.LatLng(center.lat, center.lng),
-                        pub.geometry.location
-                    );
-                    console.log(`${pub.name}: ${Math.round(distance)}m, rating: ${pub.rating}, types: ${pub.types.join(', ')}, sports: ${pub.goodForWatchingSports}, summary: ${pub.editorial_summary.substring(0, 50)}`);
-                });
-                
-                // Return all converted results - filtering happens in filterPubs()
-                return converted;
-                
-            } catch (error) {
-                console.error('Places API error:', error);
-                throw new Error('Failed to search for pubs: ' + error.message);
-            }
+                'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify({ address: location })
+        });
+        
+        if (!response.ok) throw new Error('Geocoding failed');
+        
+        const data = await response.json();
+        
+        if (data.status === 'OK' && data.results && data.results.length > 0) {
+            const loc = data.results[0].geometry.location;
+            const coords = { lat: loc.lat, lng: loc.lng };
+            console.log('Geocoded location:', location, '→', coords);
+            return coords;
+        } else {
+            throw new Error('Location not found');
         }
+    } catch (error) {
+        console.error('Geocoding error:', error);
+        throw error;
+    }
+}
+
+async function findPubs(center, maxDistance, historicFilter) {
+    console.log('Searching for pubs around:', center, 'within', maxDistance, 'meters');
+    
+    try {
+        const user = firebase.auth().currentUser;
+        if (!user) throw new Error('User not authenticated');
+        const token = await user.getIdToken();
+        
+        // Build text query based on venue types
+        let textQuery = 'pub';
+        if (historicFilter === 'sports') {
+            textQuery = 'sports bar OR pub';
+        } else if (historicFilter === 'afternoontea') {
+            textQuery = 'afternoon tea OR tea room OR cafe';
+        } else if (historicFilter === 'happyhour') {
+            textQuery = 'bar OR pub';
+        } else if (historicFilter === 'outdoor') {
+            textQuery = 'pub OR bar';
+        } else if (historicFilter === 'priority') {
+            textQuery = 'historic pub OR traditional pub';
+        }
+        
+        console.log('Searching for:', textQuery);
+        
+        const response = await fetch('https://pub-crawler-app.netlify.app/.netlify/functions/search-places', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify({
+                location: `${center.lat},${center.lng}`,
+                radius: maxDistance,
+                type: 'pub',
+                keyword: textQuery
+            })
+        });
+        
+        if (!response.ok) {
+            throw new Error(`Search failed: ${response.status}`);
+        }
+        
+        const data = await response.json();
+        
+        console.log('Backend returned:', data.places?.length || 0, 'results');
+        
+        if (!data.places || data.places.length === 0) {
+            console.warn('No places returned');
+            return [];
+        }
+        
+        // Convert to format expected by rest of app
+        const converted = data.places.map(place => {
+            const lat = place.location?.latitude || 0;
+            const lng = place.location?.longitude || 0;
+            
+            return {
+                place_id: place.id,
+                name: place.displayName?.text || 'Unknown',
+                vicinity: place.formattedAddress || '',
+                rating: place.rating || 0,
+                user_ratings_total: place.userRatingCount || 0,
+                types: place.types || [],
+                geometry: {
+                    location: new google.maps.LatLng(lat, lng)
+                },
+                opening_hours: null,
+                today_hours: null,
+                editorial_summary: place.editorialSummary?.text || '',
+                ai_summary: '',
+                goodForWatchingSports: false,
+                outdoorSeating: false,
+                servesAfternoonTea: false
+            };
+        });
+        
+        return converted;
+        
+    } catch (error) {
+        console.error('Search error:', error);
+        throw new Error('Failed to search for pubs: ' + error.message);
+    }
+}
+
 
         function filterPubs(pubs, historicFilter, minRating, openNow) {
             const historicKeywords = ['historic', 'old', 'traditional', 'victorian', 'heritage', 
