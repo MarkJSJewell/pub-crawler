@@ -17,15 +17,21 @@
             background: #fff;
             min-height: 100vh;
             color: #202124;
+            padding-top: 80px; /* Space for fixed header */
         }
 
         .header {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
             background: #fff;
             padding: 20px;
             border-bottom: 1px solid #dadce0;
             display: flex;
             align-items: center;
             justify-content: space-between;
+            z-index: 1000;
         }
 
         .header-left {
@@ -419,6 +425,14 @@
             </div>
             <div class="app-title">| Pub Crawl Planner</div>
         </div>
+        
+        <!-- User Info and Sign Out -->
+        <div style="display: flex; align-items: center; gap: 12px;">
+            <span id="user-email" style="color: #5f6368; font-size: 14px;"></span>
+            <button onclick="signOut()" style="background: #ea4335; color: white; border: none; padding: 10px 20px; border-radius: 4px; cursor: pointer; font-size: 14px; font-weight: 500; box-shadow: 0 1px 3px rgba(0,0,0,0.2);">
+                Sign Out
+            </button>
+        </div>
     </div>
 
     <div class="search-container">
@@ -426,14 +440,6 @@
             <div id="api-status" style="text-align: center; padding: 16px; color: #5f6368;">
                 Connecting to Google Maps...
        </div>
-    </div>
-
-    <!-- User Info and Sign Out -->
-    <div style="position: fixed; top: 20px; right: 20px; z-index: 1000; display: flex; align-items: center; gap: 12px;">
-        <span id="user-email" style="color: #5f6368; font-size: 14px;"></span>
-        <button onclick="signOut()" style="background: #ea4335; color: white; border: none; padding: 10px 20px; border-radius: 4px; cursor: pointer; font-size: 14px; font-weight: 500; box-shadow: 0 1px 3px rgba(0,0,0,0.2);">
-            Sign Out
-        </button>
     </div>
 
         <div class="search-form">
@@ -1171,7 +1177,7 @@ async function findPubs(center, maxDistance, historicFilter) {
                     // Route is too long
                     warningHtml = `
                         <div style="background: #fef7e0; border-left: 4px solid #fbbc04; padding: 12px; margin-top: 12px; border-radius: 4px;">
-                            <strong style="color: #b06000;">⚠️ Route exceeds maximum walking walking distance</strong>
+                            <strong style="color: #b06000;">⚠️ Route exceeds maximum walking distance</strong>
                             <p style="font-size: 13px; color: #5f6368; margin-top: 8px; line-height: 1.5;">
                                 This is the shortest route with ${info.found} venue${info.found !== 1 ? 's' : ''} (you requested ${info.requested}).
                                 Actual distance: <strong>${(info.actualDistance / 1000).toFixed(1)}km</strong> 
