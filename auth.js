@@ -115,6 +115,12 @@ function loadGoogleMaps(apiKey) {
         window.initGoogleMapsCallback = function() {
             console.log('Google Maps loaded');
             window.googleMapsLoaded = true;
+            
+            // Initialize Google Maps services (geocoder, directions, etc.)
+            if (typeof initializeGoogleMaps === 'function') {
+                initializeGoogleMaps();
+            }
+            
             document.getElementById('api-status').innerHTML = 
                 '<span style="color: #34a853;">✓ Google Maps connected!</span>';
             resolve();
