@@ -468,23 +468,26 @@
                 
                 <div class="form-row">
                     <div class="form-group">
-                        <label>Maximum distance</label>
+                        <label>Maximum walking distance</label>
                         <select name="max-distance" required>
-                            <option value="5000" selected>5 km</option>
-                            <option value="10000">10 km</option>
-                        </select>
-                    </div>
-                    
-                <div class="form-group">
-                    <label>Maximum distance</label>
-                    <select name="max-distance" required>
                             <option value="3000">3 km</option>
                             <option value="5000" selected>5 km</option>
                             <option value="10000">10 km</option>
                             <option value="15000">15 km</option>
                             <option value="20000">20 km</option>
                             <option value="50000">50 km</option>
-                    </select>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Minimum rating</label>
+                        <select name="min-rating">
+                            <option value="3.5">3.5+</option>
+                            <option value="4.0" selected>4.0+</option>
+                            <option value="4.5">4.5+</option>
+                        </select>
+                    </div>
+                    
                 </div>
 
                 <div class="form-row">
@@ -666,7 +669,7 @@
                     currentRouteData = bestRoute;
                     displayResults(bestRoutePubs);
                 } else {
-                    showError(`Could not create a walking route in this area. Try increasing the maximum distance or choosing a different location.`);
+                    showError(`Could not create a walking route in this area. Try increasing the maximum walking distance or choosing a different location.`);
                 }
                 
             } catch (error) {
@@ -1176,12 +1179,12 @@ async function findPubs(center, maxDistance, historicFilter) {
                     // Route is too long
                     warningHtml = `
                         <div style="background: #fef7e0; border-left: 4px solid #fbbc04; padding: 12px; margin-top: 12px; border-radius: 4px;">
-                            <strong style="color: #b06000;">⚠️ Route exceeds maximum distance</strong>
+                            <strong style="color: #b06000;">⚠️ Route exceeds maximum walking distance</strong>
                             <p style="font-size: 13px; color: #5f6368; margin-top: 8px; line-height: 1.5;">
                                 This is the shortest route with ${info.found} venue${info.found !== 1 ? 's' : ''} (you requested ${info.requested}).
                                 Actual distance: <strong>${(info.actualDistance / 1000).toFixed(1)}km</strong> 
                                 (max: ${(info.maxDistance / 1000).toFixed(1)}km).
-                                <br><strong>Try:</strong> Increase maximum distance, reduce number of stops, or choose a different location.
+                                <br><strong>Try:</strong> Increase maximum walking distance, reduce number of stops, or choose a different location.
                             </p>
                         </div>
                     `;
@@ -1193,7 +1196,7 @@ async function findPubs(center, maxDistance, historicFilter) {
                             <p style="font-size: 13px; color: #5f6368; margin-top: 8px; line-height: 1.5;">
                                 Only ${info.found} venue${info.found !== 1 ? 's' : ''} could fit within ${(info.maxDistance / 1000).toFixed(1)}km walking distance
                                 (you requested ${info.requested} stops).
-                                <br><strong>Try:</strong> Increase maximum distance to include more venues.
+                                <br><strong>Try:</strong> Increase maximum walking distance to include more venues.
                             </p>
                         </div>
                     `;
