@@ -1122,30 +1122,22 @@ async function findPubs(center, maxDistance, historicFilter) {
                 directionsRenderer.setDirections(currentRouteData);
             }
             
-            // Add markers
+            // Add numbered markers
             pubs.forEach((pub, index) => {
                 const marker = new google.maps.Marker({
                     position: pub.geometry.location,
                     map: map,
-                    title: pub.name,
-                    content: createMarkerContent(index + 1)
+                    label: {
+                        text: (index + 1).toString(),
+                        color: 'white',
+                        fontWeight: 'bold',
+                        fontSize: '14px'
+                    },
+                    title: pub.name
                 });
     
                 marker.addListener('click', () => showPubDetails(pub));
             });
-
-            // Add this helper function before displayResults()
-            function createMarkerContent(number) {
-                const div = document.createElement('div');
-                div.style.background = '#ea4335';
-                div.style.color = 'white';
-                div.style.padding = '8px 12px';
-                div.style.borderRadius = '50%';
-                div.style.fontWeight = 'bold';
-                div.style.fontSize = '14px';
-                div.textContent = number;
-                return div;
-            }
 
             // Display summary
             displaySummary(pubs);
@@ -1179,7 +1171,7 @@ async function findPubs(center, maxDistance, historicFilter) {
                     // Route is too long
                     warningHtml = `
                         <div style="background: #fef7e0; border-left: 4px solid #fbbc04; padding: 12px; margin-top: 12px; border-radius: 4px;">
-                            <strong style="color: #b06000;">⚠️ Route exceeds maximum walking distance</strong>
+                            <strong style="color: #b06000;">⚠️ Route exceeds maximum walking walking distance</strong>
                             <p style="font-size: 13px; color: #5f6368; margin-top: 8px; line-height: 1.5;">
                                 This is the shortest route with ${info.found} venue${info.found !== 1 ? 's' : ''} (you requested ${info.requested}).
                                 Actual distance: <strong>${(info.actualDistance / 1000).toFixed(1)}km</strong> 
