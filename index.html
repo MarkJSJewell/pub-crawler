@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Pub Crawl Planner</title>
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🍺</text></svg>">
     <style>
         * {
             margin: 0;
@@ -1020,20 +1021,29 @@ async function findPubs(center, maxDistance, historicFilter) {
             
             // Add markers
             pubs.forEach((pub, index) => {
-                const marker = new google.maps.Marker({
+                const marker = new google.maps.marker.AdvancedMarkerElement({
                     position: pub.geometry.location,
                     map: map,
-                    label: {
-                        text: (index + 1).toString(),
-                        color: 'white',
-                        fontWeight: 'bold'
-                    },
-                    title: pub.name
+                    title: pub.name,
+                    content: createMarkerContent(index + 1)
                 });
-                
+    
                 marker.addListener('click', () => showPubDetails(pub));
             });
-            
+
+            // Add this helper function before displayResults()
+            function createMarkerContent(number) {
+                const div = document.createElement('div');
+                div.style.background = '#ea4335';
+                div.style.color = 'white';
+                div.style.padding = '8px 12px';
+                div.style.borderRadius = '50%';
+                div.style.fontWeight = 'bold';
+                div.style.fontSize = '14px';
+                div.textContent = number;
+                return div;
+            }
+
             // Display summary
             displaySummary(pubs);
             
