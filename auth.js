@@ -15,7 +15,7 @@ const firebaseConfig = {
 firebase.initializeApp(firebaseConfig);
 
 // Netlify Backend URL
-const BACKEND_URL = 'https://pub-crawler-app.netlify.app/.netlify/functions';
+const BACKEND_URL = 'https://pub-crawler-backend.vercel.app/api';
 
 // Check authentication on page load
 firebase.auth().onAuthStateChanged((user) => {
