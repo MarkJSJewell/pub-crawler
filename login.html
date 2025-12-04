@@ -4,6 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Login - Historic Pub Crawler</title>
+    <!-- reCAPTCHA Script -->
+    <script src="https://www.google.com/recaptcha/api.js" async defer></script>
     <style>
         * {
             margin: 0;
@@ -204,6 +206,12 @@
         .hidden {
             display: none !important;
         }
+
+        .recaptcha-container {
+            margin: 20px 0;
+            display: flex;
+            justify-content: center;
+        }
     </style>
 </head>
 <body>
@@ -257,6 +265,11 @@
                 <input type="password" id="register-confirm" placeholder="Re-enter your password" required autocomplete="new-password">
             </div>
 
+            <!-- reCAPTCHA Widget -->
+            <div class="recaptcha-container">
+                <div class="g-recaptcha" data-sitekey="6LdO9CAsAAAAANuNemDIGNIfwSTv1aMfwQmiXyR2"></div>
+            </div>
+
             <button class="btn-register" id="register-btn" onclick="register()">
                 Create Account
             </button>
@@ -301,6 +314,10 @@
             document.getElementById('login-form').classList.add('hidden');
             document.getElementById('register-form').classList.remove('hidden');
             clearMessages();
+            // Reset reCAPTCHA when switching to register
+            if (typeof grecaptcha !== 'undefined') {
+                grecaptcha.reset();
+            }
         }
 
         function showLogin() {
@@ -397,6 +414,13 @@
                 return;
             }
 
+            // Validate reCAPTCHA
+            const recaptchaResponse = grecaptcha.getResponse();
+            if (!recaptchaResponse) {
+                showMessage('register-error', 'Please complete the reCAPTCHA verification');
+                return;
+            }
+
             setLoading('register-btn', true);
 
             try {
@@ -407,6 +431,9 @@
                 }, 1500);
             } catch (error) {
                 setLoading('register-btn', false);
+                // Reset reCAPTCHA on error
+                grecaptcha.reset();
+                
                 let errorMessage = 'Failed to create account. Please try again.';
                 
                 switch (error.code) {
