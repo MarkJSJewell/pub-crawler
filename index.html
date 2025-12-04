@@ -470,23 +470,21 @@
                     <div class="form-group">
                         <label>Maximum distance</label>
                         <select name="max-distance" required>
+                            <option value="5000" selected>5 km</option>
+                            <option value="10000">10 km</option>
+                        </select>
+                    </div>
+                    
+                <div class="form-group">
+                    <label>Maximum distance</label>
+                    <select name="max-distance" required>
                             <option value="3000">3 km</option>
                             <option value="5000" selected>5 km</option>
                             <option value="10000">10 km</option>
                             <option value="15000">15 km</option>
                             <option value="20000">20 km</option>
                             <option value="50000">50 km</option>
-                        </select>
-                    </div>
-
-                    <div class="form-group">
-                        <label>Minimum rating</label>
-                        <select name="min-rating">
-                            <option value="3.5">3.5+</option>
-                            <option value="4.0" selected>4.0+</option>
-                            <option value="4.5">4.5+</option>
-                        </select>
-                    </div>
+                    </select>
                 </div>
 
                 <div class="form-row">
@@ -497,9 +495,7 @@
                             <option value="true">Open now only</option>
                         </select>
                     </div>
-                    
-                    <div class="form-group">
-                    </div>
+                    <div class="form-group"></div>
                 </div>
                 
                 <button type="submit" class="search-btn">Search</button>
@@ -584,7 +580,7 @@
                 }
                 
                 // Select best pubs for route
-                const selectedPubs = selectBestPubs(filteredPubs, numPubs, center);
+                const selectedPubs = selectBestPubs(filteredPubs, numPubs, center, maxDistance);
                 console.log('Selected pubs:', selectedPubs.length);
                 
                 // Create optimized route
@@ -894,7 +890,7 @@ async function findPubs(center, maxDistance, historicFilter) {
             return filtered;
         }
 
-        function selectBestPubs(pubs, numPubs, center) {
+        function selectBestPubs(pubs, numPubs, center, maxDistance) {
             // Calculate distance for each pub
             const withDistance = pubs.map(pub => {
                 const location = pub.geometry.location;
@@ -906,8 +902,16 @@ async function findPubs(center, maxDistance, historicFilter) {
                 return { ...pub, distance };
             });
     
+            // STRICT FILTER: Remove any pubs beyond max distance
+            const withinRadius = withDistance.filter(pub => pub.distance <= maxDistance);
+            
+            console.log(`Filtered to ${withinRadius.length} pubs within ${maxDistance}m radius`);
+            if (withinRadius.length < withDistance.length) {
+                console.log(`Removed ${withDistance.length - withinRadius.length} pubs that were too far`);
+            }
+    
             // Sort by distance first (closest first), then by rating as tiebreaker
-            withDistance.sort((a, b) => {
+            withinRadius.sort((a, b) => {
                 const distanceDiff = a.distance - b.distance;
                 if (Math.abs(distanceDiff) > 100) {
                     return distanceDiff;
@@ -916,12 +920,12 @@ async function findPubs(center, maxDistance, historicFilter) {
             });
     
             console.log('Sorted pubs by distance:');
-            withDistance.slice(0, 10).forEach((p, i) => {
+            withinRadius.slice(0, 10).forEach((p, i) => {
                 console.log(`${i+1}. ${p.name} - ${Math.round(p.distance)}m, rating: ${p.rating}`);
             });
     
             const requestedNum = parseInt(numPubs);
-            const availableNum = withDistance.length;
+            const availableNum = withinRadius.length;
     
             // Check if we have fewer pubs than requested
             if (availableNum < requestedNum) {
@@ -936,7 +940,7 @@ async function findPubs(center, maxDistance, historicFilter) {
             }
     
             // Return all available pubs (don't pad with extras)
-            const selected = withDistance.slice(0, Math.min(availableNum, requestedNum));
+            const selected = withinRadius.slice(0, Math.min(availableNum, requestedNum));
             console.log('Selected', selected.length, 'pubs for route');
     
             return selected;
