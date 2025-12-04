@@ -1021,7 +1021,7 @@ async function findPubs(center, maxDistance, historicFilter) {
             
             // Add markers
             pubs.forEach((pub, index) => {
-                const marker = new google.maps.marker.AdvancedMarkerElement({
+                const marker = new google.maps.Marker({
                     position: pub.geometry.location,
                     map: map,
                     title: pub.name,
