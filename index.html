@@ -468,26 +468,23 @@
                 
                 <div class="form-row">
                     <div class="form-group">
-                        <label>Maximum walking distance</label>
+                        <label>Maximum distance</label>
                         <select name="max-distance" required>
+                            <option value="5000" selected>5 km</option>
+                            <option value="10000">10 km</option>
+                        </select>
+                    </div>
+                    
+                <div class="form-group">
+                    <label>Maximum distance</label>
+                    <select name="max-distance" required>
                             <option value="3000">3 km</option>
                             <option value="5000" selected>5 km</option>
                             <option value="10000">10 km</option>
                             <option value="15000">15 km</option>
                             <option value="20000">20 km</option>
                             <option value="50000">50 km</option>
-                        </select>
-                    </div>
-
-                    <div class="form-group">
-                        <label>Minimum rating</label>
-                        <select name="min-rating">
-                            <option value="3.5">3.5+</option>
-                            <option value="4.0" selected>4.0+</option>
-                            <option value="4.5">4.5+</option>
-                        </select>
-                    </div>
-                    
+                    </select>
                 </div>
 
                 <div class="form-row">
@@ -555,7 +552,8 @@
             }
         }
 
-        // STEP 2: SEARCH AND ROUTE PLANNING WITH ITERATIVE DISTANCE CONTROL
+        // STEP 2: SEARCH AND ROUTE PLANNING
+        // STEP 2: SEARCH AND ROUTE PLANNING WITH DYNAMIC OPTIMIZATION
         async function searchPubs(location, numPubs, historicFilter, maxDistance, minRating, openNow) {
             showLoading();
             
@@ -564,43 +562,47 @@
                 const center = await geocodeLocation(location);
                 console.log('Center coordinates:', center);
                 
-                // Iterative approach: Start small, expand until we find a route that fits
-                let searchRadius = Math.floor(maxDistance * 0.3); // Start at 30% of max
+                // Start by searching within the max distance
+                let searchRadius = Math.floor(maxDistance * 0.5); // Start at 50% of max
                 const maxSearchRadius = maxDistance * 2; // Don't search beyond 2x the max distance
-                let attempt = 1;
-                let selectedPubs = null;
-                let routeDistance = Infinity;
                 
-                while (searchRadius <= maxSearchRadius && routeDistance > maxDistance) {
-                    console.log(`
-=== Attempt ${attempt}: Searching within ${searchRadius}m ===`);
+                console.log(`\n=== Searching for ${numPubs} pubs within ${(maxDistance / 1000).toFixed(1)}km total walking distance ===`);
+                
+                // Search for pubs within max radius
+                const pubs = await findPubs(center, searchRadius, historicFilter);
+                console.log(`Found ${pubs.length} pubs`);
+                
+                // Filter pubs
+                const filteredPubs = filterPubs(pubs, historicFilter, minRating, openNow);
+                console.log(`After filtering: ${filteredPubs.length} pubs`);
+                
+                if (filteredPubs.length === 0) {
+                    const filterType = historicFilter === 'sports' ? 'sports bars' : 
+                                     historicFilter === 'outdoor' ? 'pubs with outdoor seating' :
+                                     historicFilter === 'afternoontea' ? 'venues serving afternoon tea' :
+                                     historicFilter === 'happyhour' ? 'venues with happy hour' :
+                                     'historic pubs';
+                    showError(`No ${filterType} found in this area. Try a different location or adjust your filters.`);
+                    return;
+                }
+                
+                // Get available pubs sorted by distance
+                const sortedPubs = selectBestPubs(filteredPubs, filteredPubs.length, center, maxDistance);
+                console.log(`Available pubs: ${sortedPubs.length}`);
+                
+                let bestRoute = null;
+                let bestRouteDistance = Infinity;
+                let bestRoutePubs = null;
+                
+                // Try with requested number of pubs first, then reduce if needed
+                const requestedNum = parseInt(numPubs);
+                const maxPubsToTry = Math.min(requestedNum, sortedPubs.length);
+                
+                for (let numToTry = maxPubsToTry; numToTry >= 2; numToTry--) {
+                    console.log(`\n--- Trying ${numToTry} pubs ---`);
                     
-                    // Search for pubs within current radius
-                    const pubs = await findPubs(center, searchRadius, historicFilter);
-                    console.log(`Found ${pubs.length} pubs`);
-                    
-                    // Filter pubs
-                    const filteredPubs = filterPubs(pubs, historicFilter, minRating, openNow);
-                    console.log(`After filtering: ${filteredPubs.length} pubs`);
-                    
-                    if (filteredPubs.length === 0) {
-                        console.log('No pubs found, expanding search...');
-                        searchRadius = Math.floor(searchRadius * 1.5);
-                        attempt++;
-                        continue;
-                    }
-                    
-                    // Check if we have enough pubs
-                    if (filteredPubs.length < parseInt(numPubs)) {
-                        console.log(`Only ${filteredPubs.length} pubs found, need ${numPubs}. Expanding search...`);
-                        searchRadius = Math.floor(searchRadius * 1.5);
-                        attempt++;
-                        continue;
-                    }
-                    
-                    // Select best pubs for route (closest ones)
-                    const candidatePubs = selectBestPubs(filteredPubs, numPubs, center, searchRadius);
-                    console.log(`Selected ${candidatePubs.length} candidate pubs`);
+                    // Select the closest N pubs
+                    const candidatePubs = sortedPubs.slice(0, numToTry);
                     
                     // Optimize the route order
                     const optimized = optimizeRoute(candidatePubs, center);
@@ -610,72 +612,69 @@
                     
                     if (directionsResult && directionsResult.routes && directionsResult.routes[0]) {
                         // Calculate total route distance
-                        routeDistance = directionsResult.routes[0].legs.reduce(
+                        const routeDistance = directionsResult.routes[0].legs.reduce(
                             (sum, leg) => sum + leg.distance.value, 
                             0
                         );
                         
-                        console.log(`Route distance: ${(routeDistance / 1000).toFixed(2)}km (max: ${(maxDistance / 1000).toFixed(2)}km)`);
+                        console.log(`${numToTry} pubs: Route distance = ${(routeDistance / 1000).toFixed(2)}km (max: ${(maxDistance / 1000).toFixed(2)}km)`);
                         
-                        if (routeDistance <= maxDistance) {
-                            // Success! Route fits within max distance
-                            console.log('✓ Route fits within max distance!');
-                            selectedPubs = optimized;
-                            currentRouteData = directionsResult;
-                            break;
-                        } else {
-                            console.log(`✗ Route too long (${(routeDistance / 1000).toFixed(2)}km > ${(maxDistance / 1000).toFixed(2)}km)`);
-                            // Try with smaller radius to get closer pubs
-                            if (attempt === 1) {
-                                // First attempt was too spread out, reduce radius
-                                searchRadius = Math.floor(searchRadius * 0.8);
-                            } else {
-                                // Gradually expand
-                                searchRadius = Math.floor(searchRadius * 1.2);
-                            }
+                        // Keep track of best route found
+                        if (routeDistance < bestRouteDistance) {
+                            bestRouteDistance = routeDistance;
+                            bestRoutePubs = optimized;
+                            bestRoute = directionsResult;
                         }
-                    } else {
-                        console.log('Failed to calculate directions, expanding search...');
-                        searchRadius = Math.floor(searchRadius * 1.5);
-                    }
-                    
-                    attempt++;
-                    
-                    // Safety limit
-                    if (attempt > 10) {
-                        console.log('Max attempts reached');
-                        break;
+                        
+                        // If route fits within max distance, we're done!
+                        if (routeDistance <= maxDistance) {
+                            console.log(`✓ Success! Found route with ${numToTry} pubs within ${(maxDistance / 1000).toFixed(2)}km`);
+                            currentRouteData = directionsResult;
+                            
+                            // Set warning if we couldn't get all requested pubs
+                            if (numToTry < requestedNum) {
+                                window.insufficientPubs = {
+                                    found: numToTry,
+                                    requested: requestedNum,
+                                    reason: 'distance'
+                                };
+                            } else {
+                                window.insufficientPubs = null;
+                            }
+                            
+                            displayResults(optimized);
+                            return;
+                        }
                     }
                 }
                 
-                // Check if we found a suitable route
-                if (!selectedPubs || routeDistance > maxDistance) {
-                    const filterType = historicFilter === 'sports' ? 'sports bars' : 
-                                     historicFilter === 'outdoor' ? 'pubs with outdoor seating' :
-                                     historicFilter === 'afternoontea' ? 'venues serving afternoon tea' :
-                                     historicFilter === 'happyhour' ? 'venues with happy hour' :
-                                     'historic pubs';
-                    
-                    if (!selectedPubs) {
-                        showError(`Could not find enough ${filterType} in this area. Try a different location or adjust your filters.`);
-                    } else {
-                        showError(`Could not create a route within ${(maxDistance / 1000).toFixed(1)}km walking distance. The best route found is ${(routeDistance / 1000).toFixed(1)}km. Try increasing the maximum walking distance.`);
-                        // Show the route anyway so user can see
-                        displayResults(selectedPubs);
-                    }
-                    return;
-                }
+                // If we get here, we couldn't find a route within the max distance
+                // Show the best route we found with a warning
+                console.log(`\n⚠ Could not create route within ${(maxDistance / 1000).toFixed(2)}km`);
+                console.log(`Best route found: ${bestRoutePubs.length} pubs, ${(bestRouteDistance / 1000).toFixed(2)}km`);
                 
-                // Display the successful route
-                console.log(`
-✓ Final route: ${selectedPubs.length} pubs, ${(routeDistance / 1000).toFixed(2)}km total walking distance`);
-                displayResults(selectedPubs);
+                if (bestRoutePubs && bestRoutePubs.length >= 2) {
+                    // Show the best route with a warning
+                    window.insufficientPubs = {
+                        found: bestRoutePubs.length,
+                        requested: requestedNum,
+                        reason: 'distance',
+                        actualDistance: bestRouteDistance,
+                        maxDistance: maxDistance
+                    };
+                    
+                    currentRouteData = bestRoute;
+                    displayResults(bestRoutePubs);
+                } else {
+                    showError(`Could not create a walking route in this area. Try increasing the maximum distance or choosing a different location.`);
+                }
                 
             } catch (error) {
                 console.error('Search error:', error);
                 showError('Search failed: ' + error.message);
             }
         }
+
 
 async function geocodeLocation(location) {
     try {
@@ -1168,19 +1167,49 @@ async function findPubs(center, maxDistance, historicFilter) {
             const totalDuration = currentRouteData ?
                 currentRouteData.routes[0].legs.reduce((sum, leg) => sum + leg.duration.value, 0) : 0;
     
-            // Check if we didn't find enough pubs
+            // Check if we didn't find enough pubs or route is too long
             let warningHtml = '';
             if (window.insufficientPubs) {
-                const { found, requested } = window.insufficientPubs;
-                warningHtml = `
-                    <div style="background: #fef7e0; border-left: 4px solid #fbbc04; padding: 12px; margin-top: 12px; border-radius: 4px;">
-                        <strong style="color: #b06000;">⚠️ Not enough venues found</strong>
-                        <p style="font-size: 13px; color: #5f6368; margin-top: 8px; line-height: 1.5;">
-                            Only found ${found} venue${found !== 1 ? 's' : ''} within your search radius, but you requested ${requested} stops.
-                            <strong>Try increasing the maximum walking distance</strong> and searching again to find more venues.
-                        </p>
-                    </div>
-                `;
+                const info = window.insufficientPubs;
+                
+                if (info.reason === 'distance' && info.actualDistance && info.maxDistance) {
+                    // Route is too long
+                    warningHtml = `
+                        <div style="background: #fef7e0; border-left: 4px solid #fbbc04; padding: 12px; margin-top: 12px; border-radius: 4px;">
+                            <strong style="color: #b06000;">⚠️ Route exceeds maximum distance</strong>
+                            <p style="font-size: 13px; color: #5f6368; margin-top: 8px; line-height: 1.5;">
+                                This is the shortest route with ${info.found} venue${info.found !== 1 ? 's' : ''} (you requested ${info.requested}).
+                                Actual distance: <strong>${(info.actualDistance / 1000).toFixed(1)}km</strong> 
+                                (max: ${(info.maxDistance / 1000).toFixed(1)}km).
+                                <br><strong>Try:</strong> Increase maximum distance, reduce number of stops, or choose a different location.
+                            </p>
+                        </div>
+                    `;
+                } else if (info.reason === 'distance') {
+                    // Found fewer pubs to fit distance
+                    warningHtml = `
+                        <div style="background: #fef7e0; border-left: 4px solid #fbbc04; padding: 12px; margin-top: 12px; border-radius: 4px;">
+                            <strong style="color: #b06000;">⚠️ Fewer stops to fit distance limit</strong>
+                            <p style="font-size: 13px; color: #5f6368; margin-top: 8px; line-height: 1.5;">
+                                Only ${info.found} venue${info.found !== 1 ? 's' : ''} could fit within ${(info.maxDistance / 1000).toFixed(1)}km walking distance
+                                (you requested ${info.requested} stops).
+                                <br><strong>Try:</strong> Increase maximum distance to include more venues.
+                            </p>
+                        </div>
+                    `;
+                } else {
+                    // Not enough venues in area
+                    warningHtml = `
+                        <div style="background: #fef7e0; border-left: 4px solid #fbbc04; padding: 12px; margin-top: 12px; border-radius: 4px;">
+                            <strong style="color: #b06000;">⚠️ Not enough venues found</strong>
+                            <p style="font-size: 13px; color: #5f6368; margin-top: 8px; line-height: 1.5;">
+                                Only found ${info.found} venue${info.found !== 1 ? 's' : ''} matching your criteria, 
+                                but you requested ${info.requested} stops.
+                                <br><strong>Try:</strong> Reduce minimum rating, change filters, or choose a different location.
+                            </p>
+                        </div>
+                    `;
+                }
             }
     
             summary.innerHTML = `
