@@ -475,16 +475,18 @@
                         </select>
                     </div>
                     
-                    <div class="form-group">
-                        <label>Minimum rating</label>
-                        <select name="min-rating">
-                            <option value="3.5">3.5+</option>
-                            <option value="4.0" selected>4.0+</option>
-                            <option value="4.5">4.5+</option>
-                        </select>
-                    </div>
+                <div class="form-group">
+                    <label>Maximum distance</label>
+                    <select name="max-distance" required>
+                            <option value="3000">3 km</option>
+                            <option value="5000" selected>5 km</option>
+                            <option value="10000">10 km</option>
+                            <option value="15000">15 km</option>
+                            <option value="20000">20 km</option>
+                            <option value="50000">50 km</option>
+                    </select>
                 </div>
-                
+
                 <div class="form-row">
                     <div class="form-group">
                         <label>Opening hours</label>
@@ -896,31 +898,45 @@ async function findPubs(center, maxDistance, historicFilter) {
                     new google.maps.LatLng(center.lat, center.lng),
                     location
                 );
-                
+        
                 return { ...pub, distance };
             });
-            
+    
             // Sort by distance first (closest first), then by rating as tiebreaker
             withDistance.sort((a, b) => {
                 const distanceDiff = a.distance - b.distance;
-                if (Math.abs(distanceDiff) > 100) { // If distance difference > 100m, use distance
+                if (Math.abs(distanceDiff) > 100) {
                     return distanceDiff;
                 }
-                // Otherwise use rating as tiebreaker
                 return (b.rating || 0) - (a.rating || 0);
             });
-            
+    
             console.log('Sorted pubs by distance:');
             withDistance.slice(0, 10).forEach((p, i) => {
                 console.log(`${i+1}. ${p.name} - ${Math.round(p.distance)}m, rating: ${p.rating}`);
             });
-            
-            const selected = withDistance.slice(0, parseInt(numPubs));
+    
+            const requestedNum = parseInt(numPubs);
+            const availableNum = withDistance.length;
+    
+            // Check if we have fewer pubs than requested
+            if (availableNum < requestedNum) {
+                console.warn(`Only found ${availableNum} pubs, user requested ${requestedNum}`);
+                // Store this info to show warning to user
+                window.insufficientPubs = {
+                    found: availableNum,
+                    requested: requestedNum
+                };
+            } else {
+                window.insufficientPubs = null;
+            }
+    
+            // Return all available pubs (don't pad with extras)
+            const selected = withDistance.slice(0, Math.min(availableNum, requestedNum));
             console.log('Selected', selected.length, 'pubs for route');
-            
+    
             return selected;
         }
-
         async function createRoute(pubs, center) {
             if (pubs.length === 0) return;
             
@@ -1059,18 +1075,35 @@ async function findPubs(center, maxDistance, historicFilter) {
             }, 100);
         }
 
+
         function displaySummary(pubs) {
             const summary = document.getElementById('route-summary');
             const totalDistance = currentRouteData ? 
                 currentRouteData.routes[0].legs.reduce((sum, leg) => sum + leg.distance.value, 0) : 0;
             const totalDuration = currentRouteData ?
                 currentRouteData.routes[0].legs.reduce((sum, leg) => sum + leg.duration.value, 0) : 0;
-            
+    
+            // Check if we didn't find enough pubs
+            let warningHtml = '';
+            if (window.insufficientPubs) {
+                const { found, requested } = window.insufficientPubs;
+                warningHtml = `
+                    <div style="background: #fef7e0; border-left: 4px solid #fbbc04; padding: 12px; margin-top: 12px; border-radius: 4px;">
+                        <strong style="color: #b06000;">⚠️ Not enough venues found</strong>
+                        <p style="font-size: 13px; color: #5f6368; margin-top: 8px; line-height: 1.5;">
+                            Only found ${found} venue${found !== 1 ? 's' : ''} within your search radius, but you requested ${requested} stops.
+                            <strong>Try increasing the maximum distance</strong> and searching again to find more venues.
+                        </p>
+                    </div>
+                `;
+            }
+    
             summary.innerHTML = `
                 <h3>Your Pub Crawl Route</h3>
                 <p><strong>${pubs.length} stops</strong></p>
                 <p>${(totalDistance / 1000).toFixed(1)} km walking distance</p>
                 <p>~${Math.round(totalDuration / 60)} minutes walking time</p>
+                ${warningHtml}
                 <p style="font-size: 12px; color: #5f6368; margin-top: 12px; line-height: 1.5;">
                     <strong>Route optimization:</strong> Pubs are selected by proximity to your search location and ordered using a nearest-neighbor algorithm to minimize walking distance. The walking route is calculated by Google Maps Directions API.
                 </p>
