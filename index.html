@@ -596,11 +596,13 @@
                 console.log(`After filtering: ${filteredPubs.length} pubs`);
                 
                 if (filteredPubs.length === 0) {
-                    const filterType = historicFilter === 'sports' ? 'sports bars' : 
+                    const filterType = historicFilter === 'all' ? 'pubs' :
+                                     historicFilter === 'sports' ? 'sports bars' : 
                                      historicFilter === 'outdoor' ? 'pubs with outdoor seating' :
                                      historicFilter === 'afternoontea' ? 'venues serving afternoon tea' :
                                      historicFilter === 'happyhour' ? 'venues with happy hour' :
-                                     'historic pubs';
+                                     historicFilter === 'priority' ? 'historic pubs' :
+                                     'pubs';
                     showError(`No ${filterType} found in this area. Try a different location or adjust your filters.`);
                     return;
                 }
@@ -617,12 +619,14 @@
                 console.log(`Pubs within ${(startRadius / 1000).toFixed(1)}km of location: ${pubsWithinStartRadius.length}`);
                 
                 if (pubsWithinStartRadius.length === 0) {
-                    const filterType = historicFilter === 'sports' ? 'sports bars' : 
+                    const filterType = historicFilter === 'all' ? 'pubs' :
+                                     historicFilter === 'sports' ? 'sports bars' : 
                                      historicFilter === 'outdoor' ? 'pubs with outdoor seating' :
                                      historicFilter === 'afternoontea' ? 'venues serving afternoon tea' :
                                      historicFilter === 'happyhour' ? 'venues with happy hour' :
-                                     'historic pubs';
-                    showError(`No ${filterType} found within ${(startRadius / 1000).toFixed(1)}km of your location. Try increasing the starting radius or choosing a different location.`);
+                                     historicFilter === 'priority' ? 'historic pubs' :
+                                     'pubs';
+                    showError(`No ${filterType} found within ${(startRadius / 1000).toFixed(1)}km of your location. Try increasing the starting distance or choosing a different location.`);
                     return;
                 }
                 
