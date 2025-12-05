@@ -460,8 +460,8 @@
                     <div class="form-group">
                         <label>Venue type</label>
                         <select name="historic-filter" required>
-                            <option value="all">All pubs</option>
-                            <option value="priority" selected>Historic pubs only</option>
+                            <option value="all" selected>All pubs</option>
+                            <option value="priority">Historic pubs only</option>
                             <option value="sports">Sports bars</option>
                             <option value="outdoor">Outdoor seating</option>
                             <option value="afternoontea">Afternoon tea</option>
@@ -472,16 +472,6 @@
                 
                 <div class="form-row">
                     <div class="form-group">
-                        <label>Starting radius from location</label>
-                        <select name="starting-radius" required>
-                            <option value="1000" selected>1 km</option>
-                            <option value="2000">2 km</option>
-                            <option value="5000">5 km</option>
-                            <option value="10000">10 km</option>
-                        </select>
-                    </div>
-
-                    <div class="form-group">
                         <label>Maximum walking distance</label>
                         <select name="max-distance" required>
                             <option value="3000">3 km</option>
@@ -490,6 +480,16 @@
                             <option value="15000">15 km</option>
                             <option value="20000">20 km</option>
                             <option value="50000">50 km</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Starting distance from location</label>
+                        <select name="starting-radius" required>
+                            <option value="1000" selected>1 km</option>
+                            <option value="2000">2 km</option>
+                            <option value="5000">5 km</option>
+                            <option value="10000">10 km</option>
                         </select>
                     </div>
                 </div>
@@ -503,18 +503,14 @@
                             <option value="4.5">4.5+</option>
                         </select>
                     </div>
-                    
-                </div>
 
-                <div class="form-row">
                     <div class="form-group">
                         <label>Opening hours</label>
                         <select name="open-now">
-                            <option value="false">All pubs</option>
+                            <option value="false">Any time</option>
                             <option value="true">Open now only</option>
                         </select>
                     </div>
-                    <div class="form-group"></div>
                 </div>
                 
                 <button type="submit" class="search-btn">Search</button>
@@ -585,8 +581,8 @@
                 const startRadius = parseInt(startingRadius) || 1000;
                 console.log(`Starting radius: ${(startRadius / 1000).toFixed(1)}km from location`);
                 
-                // Start by searching within the max distance
-                let searchRadius = Math.floor(maxDistance * 0.5); // Start at 50% of max
+                // Start with a small search radius to find closest pubs
+                let searchRadius = 1000; // Start at 1km to prioritize closest pubs
                 const maxSearchRadius = maxDistance * 2; // Don't search beyond 2x the max distance
                 
                 console.log(`\n=== Searching for ${numPubs} pubs within ${(maxDistance / 1000).toFixed(1)}km total walking distance ===`);
