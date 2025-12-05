@@ -1079,13 +1079,39 @@ async function findPubs(center, maxDistance, historicFilter) {
             displayResults(optimized);
         }
 
-        function optimizeRoute(pubs, start) {
+        function optimizeRoute(pubs, originalLocation) {
+            // Start from the closest pub to the original location, not the location itself
+            if (pubs.length === 0) return [];
+            
+            // Find the pub closest to the original location to use as starting point
+            let startPubIndex = 0;
+            let minDistToStart = Infinity;
+            
+            pubs.forEach((pub, idx) => {
+                const dist = google.maps.geometry.spherical.computeDistanceBetween(
+                    new google.maps.LatLng(originalLocation.lat, originalLocation.lng),
+                    pub.geometry.location
+                );
+                if (dist < minDistToStart) {
+                    minDistToStart = dist;
+                    startPubIndex = idx;
+                }
+            });
+            
+            // Remove the starting pub and add it first
             const ordered = [];
             const remaining = [...pubs];
-            let current = start;
+            const startPub = remaining.splice(startPubIndex, 1)[0];
+            ordered.push(startPub);
             
+            // Continue from the first pub
+            let current = { 
+                lat: startPub.geometry.location.lat(), 
+                lng: startPub.geometry.location.lng() 
+            };
+            
+            // Build the rest of the route using nearest-neighbor
             while (remaining.length > 0) {
-                // Find nearest pub to current location
                 let nearest = 0;
                 let minDist = Infinity;
                 
@@ -1107,6 +1133,7 @@ async function findPubs(center, maxDistance, historicFilter) {
                 current = { lat: pub.geometry.location.lat(), lng: pub.geometry.location.lng() };
             }
             
+            console.log(`Route starts from: ${ordered[0].name} (closest to entered location)`);
             return ordered;
         }
 
