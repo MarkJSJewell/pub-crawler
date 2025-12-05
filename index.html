@@ -472,6 +472,16 @@
                 
                 <div class="form-row">
                     <div class="form-group">
+                        <label>Starting radius from location</label>
+                        <select name="starting-radius" required>
+                            <option value="1000" selected>1 km</option>
+                            <option value="2000">2 km</option>
+                            <option value="5000">5 km</option>
+                            <option value="10000">10 km</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
                         <label>Maximum walking distance</label>
                         <select name="max-distance" required>
                             <option value="3000">3 km</option>
@@ -482,7 +492,9 @@
                             <option value="50000">50 km</option>
                         </select>
                     </div>
+                </div>
 
+                <div class="form-row">
                     <div class="form-group">
                         <label>Minimum rating</label>
                         <select name="min-rating">
@@ -561,13 +573,17 @@
 
         // STEP 2: SEARCH AND ROUTE PLANNING
         // STEP 2: SEARCH AND ROUTE PLANNING WITH DYNAMIC OPTIMIZATION
-        async function searchPubs(location, numPubs, historicFilter, maxDistance, minRating, openNow) {
+        async function searchPubs(location, numPubs, historicFilter, maxDistance, minRating, openNow, startingRadius) {
             showLoading();
             
             try {
                 // Geocode the location
                 const center = await geocodeLocation(location);
                 console.log('Center coordinates:', center);
+                
+                // Parse starting radius (defaults to 1km if not provided)
+                const startRadius = parseInt(startingRadius) || 1000;
+                console.log(`Starting radius: ${(startRadius / 1000).toFixed(1)}km from location`);
                 
                 // Start by searching within the max distance
                 let searchRadius = Math.floor(maxDistance * 0.5); // Start at 50% of max
@@ -593,8 +609,29 @@
                     return;
                 }
                 
-                // Get available pubs sorted by distance
-                const sortedPubs = selectBestPubs(filteredPubs, filteredPubs.length, center, maxDistance);
+                // FILTER BY STARTING RADIUS: Only keep pubs within starting radius from location
+                const pubsWithinStartRadius = filteredPubs.filter(pub => {
+                    const distance = google.maps.geometry.spherical.computeDistanceBetween(
+                        new google.maps.LatLng(center.lat, center.lng),
+                        pub.geometry.location
+                    );
+                    return distance <= startRadius;
+                });
+                
+                console.log(`Pubs within ${(startRadius / 1000).toFixed(1)}km of location: ${pubsWithinStartRadius.length}`);
+                
+                if (pubsWithinStartRadius.length === 0) {
+                    const filterType = historicFilter === 'sports' ? 'sports bars' : 
+                                     historicFilter === 'outdoor' ? 'pubs with outdoor seating' :
+                                     historicFilter === 'afternoontea' ? 'venues serving afternoon tea' :
+                                     historicFilter === 'happyhour' ? 'venues with happy hour' :
+                                     'historic pubs';
+                    showError(`No ${filterType} found within ${(startRadius / 1000).toFixed(1)}km of your location. Try increasing the starting radius or choosing a different location.`);
+                    return;
+                }
+                
+                // Get available pubs sorted by distance (only from those within start radius)
+                const sortedPubs = selectBestPubs(pubsWithinStartRadius, pubsWithinStartRadius.length, center, maxDistance);
                 console.log(`Available pubs: ${sortedPubs.length}`);
                 
                 let bestRoute = null;
@@ -1559,7 +1596,8 @@ async function findPubs(center, maxDistance, historicFilter) {
                         formData.get('historic-filter'),
                         formData.get('max-distance'),
                         parseFloat(formData.get('min-rating')),
-                        formData.get('open-now') === 'true'
+                        formData.get('open-now') === 'true',
+                        formData.get('starting-radius')
                     );
                 });
             }
