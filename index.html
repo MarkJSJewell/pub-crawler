@@ -1199,6 +1199,10 @@ if (!isTeaVenue || (!servesAfternoonTea && !hasAfternoonTeaKeyword)) {
             const matchedDogFriendlyKeywords = dogFriendlyKeywords.filter(kw => combined.includes(kw));
             const isDogFriendly = pub.allowsDogs || matchedDogFriendlyKeywords.length > 0;
             
+
+// ADD THIS DEBUG LINE:
+console.log(`${pub.name}: allowsDogs=${pub.allowsDogs}, keywords=${matchedDogFriendlyKeywords.length}, isDogFriendly=${isDogFriendly}`);
+
             let priorityClass = '';
             if (isDogFriendly) {
                 priorityClass = 'dogfriendly';
