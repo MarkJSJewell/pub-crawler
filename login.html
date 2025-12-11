@@ -302,6 +302,13 @@
         // Initialize Firebase
         firebase.initializeApp(firebaseConfig);
 
+        // Initialize App Check with reCAPTCHA v3
+        const appCheck = firebase.appCheck();
+        appCheck.activate(
+            '6Ld_OCgsAAAAAAgEbt4nOW6wuO0cJKI9bEo80fae', // Same v3 key as in auth.js
+            true
+        );
+
         // Check if already logged in
         firebase.auth().onAuthStateChanged((user) => {
             if (user) {
