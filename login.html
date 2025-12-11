@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Login - Pub Crawl Planner</title>
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🍺</text></svg>">
     <!-- reCAPTCHA Script -->
     <script src="https://www.google.com/recaptcha/api.js" async defer></script>
     <style>
@@ -265,7 +266,7 @@
                 <input type="password" id="register-confirm" placeholder="Re-enter your password" required autocomplete="new-password">
             </div>
 
-            <!-- reCAPTCHA Widget -->
+            <!-- reCAPTCHA Widget - REPLACE WITH YOUR RECAPTCHA V2 SITE KEY -->
             <div class="recaptcha-container">
                 <div class="g-recaptcha" data-sitekey="6LdO9CAsAAAAANuNemDIGNIfwSTv1aMfwQmiXyR2"></div>
             </div>
@@ -283,10 +284,21 @@
         </div>
     </div>
 
-    <!-- Firebase SDK -->
-    <script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-auth-compat.js"></script>
+    <!-- Firebase SDK - Using version 9.23.0 for better compatibility -->
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
 
     <script>
+        // Check if Firebase loaded
+        console.log('Firebase check:', typeof firebase);
+        
+        if (typeof firebase === 'undefined') {
+            document.body.innerHTML = '<div style="text-align:center;padding:50px;font-family:sans-serif;"><h1>⚠️ Error Loading Authentication</h1><p>Firebase failed to load. Please refresh the page or try again later.</p></div>';
+            throw new Error('Firebase failed to load');
+        }
+
+        console.log('✓ Firebase loaded successfully');
+
         // Your Firebase configuration
         const firebaseConfig = {
             apiKey: "AIzaSyDllyjsS-uJ5ldC95xo8QQuyu9eNwm5i8U",
@@ -300,11 +312,12 @@
 
         // Initialize Firebase
         firebase.initializeApp(firebaseConfig);
+        console.log('✓ Firebase initialized successfully');
 
         // Check if already logged in
         firebase.auth().onAuthStateChanged((user) => {
             if (user) {
-                // User is already logged in, redirect to app
+                console.log('User already logged in, redirecting...');
                 window.location.href = 'index.html';
             }
         });
@@ -313,7 +326,6 @@
             document.getElementById('login-form').classList.add('hidden');
             document.getElementById('register-form').classList.remove('hidden');
             clearMessages();
-            // Reset reCAPTCHA when switching to register
             if (typeof grecaptcha !== 'undefined') {
                 grecaptcha.reset();
             }
@@ -363,10 +375,14 @@
             setLoading('login-btn', true);
 
             try {
+                console.log('Attempting login...');
                 await firebase.auth().signInWithEmailAndPassword(email, password);
+                console.log('Login successful!');
                 // Redirect will happen automatically via onAuthStateChanged
             } catch (error) {
                 setLoading('login-btn', false);
+                console.error('Login error:', error.code, error.message);
+                
                 let errorMessage = 'Failed to sign in. Please try again.';
                 
                 switch (error.code) {
@@ -384,6 +400,9 @@
                         break;
                     case 'auth/too-many-requests':
                         errorMessage = 'Too many failed attempts. Please try again later.';
+                        break;
+                    case 'auth/invalid-credential':
+                        errorMessage = 'Invalid email or password. Please check your credentials.';
                         break;
                 }
                 
@@ -414,6 +433,11 @@
             }
 
             // Validate reCAPTCHA
+            if (typeof grecaptcha === 'undefined') {
+                showMessage('register-error', 'reCAPTCHA not loaded. Please refresh the page.');
+                return;
+            }
+
             const recaptchaResponse = grecaptcha.getResponse();
             if (!recaptchaResponse) {
                 showMessage('register-error', 'Please complete the reCAPTCHA verification');
@@ -423,15 +447,17 @@
             setLoading('register-btn', true);
 
             try {
+                console.log('Attempting registration...');
                 await firebase.auth().createUserWithEmailAndPassword(email, password);
+                console.log('Registration successful!');
                 showMessage('register-success', 'Account created successfully! Redirecting...');
                 setTimeout(() => {
                     window.location.href = 'index.html';
                 }, 1500);
             } catch (error) {
                 setLoading('register-btn', false);
-                // Reset reCAPTCHA on error
                 grecaptcha.reset();
+                console.error('Registration error:', error.code, error.message);
                 
                 let errorMessage = 'Failed to create account. Please try again.';
                 
