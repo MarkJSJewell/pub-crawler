@@ -725,30 +725,35 @@
                     return [];
                 }
                 
-                const converted = data.places.map(place => {
-                    const lat = place.location?.latitude || 0;
-                    const lng = place.location?.longitude || 0;
-                    
-                    return {
-                        place_id: place.id,
-                        name: place.displayName?.text || 'Unknown',
-                        vicinity: place.formattedAddress || '',
-                        rating: place.rating || 0,
-                        user_ratings_total: place.userRatingCount || 0,
-                        types: place.types || [],
-                        geometry: {
-                            location: new google.maps.LatLng(lat, lng)
-                        },
-                        opening_hours: null,
-                        today_hours: null,
-                        editorial_summary: place.editorialSummary?.text || '',
-                        ai_summary: '',
-                        goodForWatchingSports: false,
-                        outdoorSeating: false,
-                        servesAfternoonTea: false,
-                        allowsDogs: false
-                    };
-                });
+const converted = data.places.map(place => {
+    const lat = place.location?.latitude || 0;
+    const lng = place.location?.longitude || 0;
+    
+    const pub = {
+        place_id: place.id,
+        name: place.displayName?.text || 'Unknown',
+        vicinity: place.formattedAddress || '',
+        rating: place.rating || 0,
+        user_ratings_total: place.userRatingCount || 0,
+        types: place.types || [],
+        geometry: {
+            location: new google.maps.LatLng(lat, lng)
+        },
+        opening_hours: null,
+        today_hours: null,
+        editorial_summary: place.editorialSummary?.text || '',
+        ai_summary: '',
+        goodForWatchingSports: place.goodForWatchingSports || false,
+        outdoorSeating: place.outdoorSeating || false,
+        servesAfternoonTea: place.servesAfternoonTea || false,
+        allowsDogs: place.allowsDogs || false
+    };
+    
+    // Debug logging
+    console.log(`${pub.name}: allowsDogs=${place.allowsDogs}, outdoorSeating=${place.outdoorSeating}, sports=${place.goodForWatchingSports}`);
+    
+    return pub;
+});
                 
                 return converted;
                 
