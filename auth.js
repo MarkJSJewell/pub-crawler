@@ -12,6 +12,16 @@ const firebaseConfig = {
 // Initialize Firebase
 firebase.initializeApp(firebaseConfig);
 
+// Initialize Firebase App Check with reCAPTCHA v3
+// Replace 'YOUR_RECAPTCHA_V3_SITE_KEY' with your actual reCAPTCHA v3 site key
+const appCheck = firebase.appCheck();
+appCheck.activate(
+    '6Ld_OCgsAAAAAAgEbt4nOW6wuO0cJKI9bEo80fae', // <-- REPLACE THIS WITH YOUR RECAPTCHA V3 SITE KEY
+    true // Pass true to enable automatic token refresh
+);
+
+console.log('Firebase App Check initialized');
+
 // Backend URL for serverless functions
 const BACKEND_URL = 'https://pub-crawler-backend.vercel.app/api';
 
