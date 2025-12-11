@@ -284,7 +284,6 @@
     </div>
 
     <!-- Firebase SDK -->
-    <script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-auth-compat.js"></script>
 
     <script>
@@ -301,13 +300,6 @@
 
         // Initialize Firebase
         firebase.initializeApp(firebaseConfig);
-
-        // Initialize App Check with reCAPTCHA v3
-        const appCheck = firebase.appCheck();
-        appCheck.activate(
-            '6Ld_OCgsAAAAAAgEbt4nOW6wuO0cJKI9bEo80fae', // Same v3 key as in auth.js
-            true
-        );
 
         // Check if already logged in
         firebase.auth().onAuthStateChanged((user) => {
