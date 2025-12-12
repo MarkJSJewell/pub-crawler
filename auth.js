@@ -122,23 +122,30 @@ function loadGoogleMaps(apiKey) {
         console.log('Loading Google Maps API...');
         
         // Create callback function
-        window.initGoogleMapsCallback = function() {
-            console.log('Google Maps loaded');
-            window.googleMapsLoaded = true;
-            
-            // Initialize Google Maps services (geocoder, directions, etc.)
-            if (typeof initializeGoogleMaps === 'function') {
-                initializeGoogleMaps();
-            }
-            
-            document.getElementById('api-status').innerHTML = 
-                '<span style="color: #34a853;">✓ Google Maps connected!</span>';
-            resolve();
-        };
+
+window.initGoogleMapsCallback = function() {
+    console.log('Google Maps loaded');
+    window.googleMapsLoaded = true;
+    
+    // Initialize Google Maps services (geocoder, directions, etc.)
+    if (typeof initializeGoogleMaps === 'function') {
+        initializeGoogleMaps();
+    }
+    
+    // Initialize autocomplete
+    if (typeof initializeAutocomplete === 'function') {
+        initializeAutocomplete();
+    }
+    
+    document.getElementById('api-status').innerHTML = 
+        '<span style="color: #34a853;">✓ Google Maps connected!</span>';
+    resolve();
+};
+
         
         // Create script tag
         const script = document.createElement('script');
-        script.src = `https://maps.googleapis.com/maps/api/js?key=${apiKey}&libraries=places,geometry&callback=initGoogleMapsCallback`;
+	script.src = `https://maps.googleapis.com/maps/api/js?key=${apiKey}&libraries=places,geometry&callback=initGoogleMapsCallback`;
         script.async = true;
         script.defer = true;
         script.onerror = () => reject(new Error('Failed to load Google Maps'));

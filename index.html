@@ -355,6 +355,35 @@
             padding: 32px 20px;
             color: #5f6368;
         }
+
+/* Google Autocomplete Styling */
+.pac-container {
+    font-family: 'Google Sans', 'Roboto', Arial, sans-serif;
+    border-radius: 8px;
+    margin-top: 4px;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+    border: none;
+}
+
+.pac-item {
+    padding: 10px;
+    cursor: pointer;
+    border-top: 1px solid #e8eaed;
+}
+
+.pac-item:hover {
+    background-color: #f8f9fa;
+}
+
+.pac-item-query {
+    font-size: 14px;
+    color: #202124;
+}
+
+.pac-matched {
+    font-weight: 600;
+}
+
     </style>
 </head>
 <body>
@@ -506,6 +535,35 @@
             } catch (error) {
                 console.error('Error initializing:', error);
             }
+
+function initializeAutocomplete() {
+    const locationInput = document.querySelector('input[name="location"]');
+    
+    if (!locationInput) {
+        console.error('Location input not found');
+        return;
+    }
+    
+    // Create autocomplete object
+    const autocomplete = new google.maps.places.Autocomplete(locationInput, {
+        types: ['geocode', 'establishment'],
+        componentRestrictions: { country: 'gb' }  // Restrict to UK
+    });
+    
+    // When user selects a place from dropdown
+    autocomplete.addListener('place_changed', function() {
+        const place = autocomplete.getPlace();
+        
+        if (place.geometry) {
+            console.log('Autocomplete selected:', place.formatted_address);
+            // The input now has the formatted address, ready to use
+        }
+    });
+    
+    console.log('✓ Autocomplete initialized');
+}
+
+
         }
 
         async function searchPubs(location, numPubs, historicFilter, maxDistance, minRating, openNow, startingRadius) {
