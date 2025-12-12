@@ -545,30 +545,50 @@
                     return;
                 }
                 
-                const pubsWithinStartRadius = filteredPubs.filter(pub => {
-                    const distance = google.maps.geometry.spherical.computeDistanceBetween(
-                        new google.maps.LatLng(center.lat, center.lng),
-                        pub.geometry.location
-                    );
-                    return distance <= startRadius;
-                });
-                
-                console.log(`Pubs within ${(startRadius / 1000).toFixed(1)}km of location: ${pubsWithinStartRadius.length}`);
-                
-                if (pubsWithinStartRadius.length === 0) {
-                    const filterType = historicFilter === 'all' ? 'pubs' :
-                                     historicFilter === 'sports' ? 'sports bars' : 
-                                     historicFilter === 'outdoor' ? 'pubs with outdoor seating' :
-                                     historicFilter === 'dogfriendly' ? 'dog-friendly venues' :
-                                     historicFilter === 'afternoontea' ? 'venues serving afternoon tea' :
-                                     historicFilter === 'happyhour' ? 'venues with happy hour' :
-                                     historicFilter === 'priority' ? 'historic pubs' :
-                                     'pubs';
-                    showError(`No ${filterType} found within ${(startRadius / 1000).toFixed(1)}km of your location. Try increasing the starting distance or choosing a different location.`);
-                    return;
-                }
-                
-                const sortedPubs = selectBestPubs(pubsWithinStartRadius, pubsWithinStartRadius.length, center, maxDistance);
+
+// Sort ALL filtered pubs by distance from location
+const allPubsSorted = filteredPubs
+    .map(pub => {
+        const distance = google.maps.geometry.spherical.computeDistanceBetween(
+            new google.maps.LatLng(center.lat, center.lng),
+            pub.geometry.location
+        );
+        return { ...pub, distance };
+    })
+    .sort((a, b) => a.distance - b.distance);
+
+console.log(`All pubs sorted by distance: ${allPubsSorted.length}`);
+
+// Find the first pub within the starting radius
+const firstPub = allPubsSorted.find(pub => pub.distance <= startRadius);
+
+if (!firstPub) {
+    const filterType = historicFilter === 'all' ? 'pubs' :
+                     historicFilter === 'sports' ? 'sports bars' : 
+                     historicFilter === 'outdoor' ? 'pubs with outdoor seating' :
+                     historicFilter === 'dogfriendly' ? 'dog-friendly venues' :
+                     historicFilter === 'afternoontea' ? 'venues serving afternoon tea' :
+                     historicFilter === 'happyhour' ? 'venues with happy hour' :
+                     historicFilter === 'priority' ? 'historic pubs' :
+                     'pubs';
+    showError(`No ${filterType} found within ${(startRadius / 1000).toFixed(1)}km of your location. Try increasing the starting distance or choosing a different location.`);
+    return;
+}
+
+console.log(`First pub within ${(startRadius / 1000).toFixed(1)}km: ${firstPub.name} (${Math.round(firstPub.distance)}m)`);
+
+// Now build a route starting from firstPub, using ALL pubs within maxDistance for subsequent stops
+// Filter to only pubs that could possibly be within maxDistance of the route
+const pubsForRoute = allPubsSorted.filter(pub => pub.distance <= maxDistance);
+
+console.log(`Pubs available for route (within ${(maxDistance / 1000).toFixed(1)}km): ${pubsForRoute.length}`);
+
+// Put the first pub at the start, then sort the rest by proximity for route building
+const sortedPubs = [firstPub, ...pubsForRoute.filter(p => p.place_id !== firstPub.place_id)];
+
+console.log(`Route candidates: ${sortedPubs.length} pubs`);
+
+
                 console.log(`Available pubs: ${sortedPubs.length}`);
                 
                 let bestRoute = null;
