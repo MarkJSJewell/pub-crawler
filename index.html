@@ -511,6 +511,9 @@
         async function searchPubs(location, numPubs, historicFilter, maxDistance, minRating, openNow, startingRadius) {
             showLoading();
             
+    // Store the filter type globally so displayResults can use it
+    window.currentFilterType = historicFilter;
+
             try {
                 const center = await geocodeLocation(location);
                 console.log('Center coordinates:', center);
@@ -616,10 +619,16 @@
                     }
                 }
                 
-                console.log(`\n⚠ Could not create route within ${(maxDistance / 1000).toFixed(2)}km`);
-                console.log(`Best route found: ${bestRoutePubs.length} pubs, ${(bestRouteDistance / 1000).toFixed(2)}km`);
-                
-                if (bestRoutePubs && bestRoutePubs.length >= 2) {
+                 console.log(`\n⚠ Could not create route within ${(maxDistance / 1000).toFixed(2)}km`);
+
+                 // Check if bestRoutePubs exists before accessing .length
+                 if (bestRoutePubs && bestRoutePubs.length > 0) {
+                     console.log(`Best route found: ${bestRoutePubs.length} pubs, ${(bestRouteDistance / 1000).toFixed(2)}km`);
+                 } else {
+                     console.log('No route could be created');
+                 }
+
+                 if (bestRoutePubs && bestRoutePubs.length >= 2) {
                     window.insufficientPubs = {
                         found: bestRoutePubs.length,
                         requested: requestedNum,
@@ -630,9 +639,18 @@
                     
                     currentRouteData = bestRoute;
                     displayResults(bestRoutePubs);
-                } else {
-                    showError(`Could not create a walking route in this area. Try increasing the maximum walking distance or choosing a different location.`);
-                }
+		 } else {
+		     // Determine appropriate error message
+		     let errorMsg = '';
+		     if (sortedPubs.length === 0) {
+		         errorMsg = 'No venues found matching your criteria in this area.';
+		     } else if (sortedPubs.length === 1) {
+		         errorMsg = `Only found 1 venue (${sortedPubs[0].name}) within your search area. Try increasing the starting distance or maximum walking distance to find more venues.`;
+		     } else {
+		         errorMsg = 'Could not create a walking route in this area. Try increasing the maximum walking distance or choosing a different location.';
+ 		    }
+  		   showError(errorMsg);
+		 }
                 
             } catch (error) {
                 console.error('Search error:', error);
@@ -1046,51 +1064,50 @@ if (!isTeaVenue || (!servesAfternoonTea && !hasAfternoonTeaKeyword)) {
         });
     }
 
-    function displayResults(pubs) {
-        const bounds = new google.maps.LatLngBounds();
-        pubs.forEach(pub => bounds.extend(pub.geometry.location));
-        
-        map = new google.maps.Map(document.getElementById('map'), {
-            zoom: 14,
-            center: bounds.getCenter(),
-            zoomControl: true,
-            mapTypeControl: false,
-            streetViewControl: false,
-            fullscreenControl: true
-        });
-        
-        map.fitBounds(bounds);
-        
-        if (currentRouteData) {
-            directionsRenderer.setMap(map);
-            directionsRenderer.setDirections(currentRouteData);
-        }
-        
-        pubs.forEach((pub, index) => {
-            const marker = new google.maps.Marker({
-                position: pub.geometry.location,
-                map: map,
-                label: {
-                    text: (index + 1).toString(),
-                    color: 'white',
-                    fontWeight: 'bold',
-                    fontSize: '14px'
-                },
-                title: pub.name
-            });
-
-            marker.addListener('click', () => showPubDetails(pub));
-        });
-
-        displaySummary(pubs);
-        displayPubList(pubs);
-        
-        document.getElementById('results-layout').style.display = 'block';
-        
-        setTimeout(() => {
-            document.getElementById('results-layout').scrollIntoView({ behavior: 'smooth', block: 'start' });
-        }, 100);
+function displayResults(pubs) {
+    const bounds = new google.maps.LatLngBounds();
+    pubs.forEach(pub => bounds.extend(pub.geometry.location));
+    
+    map = new google.maps.Map(document.getElementById('map'), {
+        zoom: 14,
+        center: bounds.getCenter(),
+        zoomControl: true,
+        mapTypeControl: false,
+        streetViewControl: false,
+        fullscreenControl: true
+    });
+    
+    map.fitBounds(bounds);
+    
+    if (currentRouteData) {
+        directionsRenderer.setMap(map);
+        directionsRenderer.setDirections(currentRouteData);
     }
+    
+    pubs.forEach((pub, index) => {
+        const marker = new google.maps.Marker({
+            position: pub.geometry.location,
+            map: map,
+            label: {
+                text: (index + 1).toString(),
+                color: 'white',
+                fontWeight: 'bold',
+                fontSize: '14px'
+            },
+            title: pub.name
+        });
+        marker.addListener('click', () => showPubDetails(pub));
+    });
+
+    displaySummary(pubs);
+    displayPubList(pubs, window.currentFilterType || 'all');
+    
+    document.getElementById('results-layout').style.display = 'block';
+    
+    setTimeout(() => {
+        document.getElementById('results-layout').scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }, 100);
+}
 
     function displaySummary(pubs) {
         const summary = document.getElementById('route-summary');
@@ -1152,7 +1169,7 @@ if (!isTeaVenue || (!servesAfternoonTea && !hasAfternoonTeaKeyword)) {
         `;
     }
 
-    function displayPubList(pubs) {
+    function displayPubList(pubs, currentFilterType);
         const list = document.getElementById('pub-list');
         const historicKeywords = ['historic', 'old', 'traditional', 'victorian', 'heritage', 
                                  'ancient', 'ye olde', 'coaching', 'inn', 'tavern',
@@ -1203,20 +1220,24 @@ if (!isTeaVenue || (!servesAfternoonTea && !hasAfternoonTeaKeyword)) {
 // ADD THIS DEBUG LINE:
 console.log(`${pub.name}: allowsDogs=${pub.allowsDogs}, keywords=${matchedDogFriendlyKeywords.length}, isDogFriendly=${isDogFriendly}`);
 
-            let priorityClass = '';
-            if (isDogFriendly) {
-                priorityClass = 'dogfriendly';
-            } else if (hasHappyHour) {
-                priorityClass = 'happyhour';
-            } else if (servesAfternoonTea) {
-                priorityClass = 'afternoontea';
-            } else if (hasOutdoorSeating) {
-                priorityClass = 'outdoor';
-            } else if (isSportsBar) {
-                priorityClass = 'sports';
-            } else if (hasHistoric) {
-                priorityClass = 'priority';
-            }
+// Determine card styling based on SELECTED filter, not all matches
+let priorityClass = '';
+
+// If a specific filter is selected, use that color scheme
+if (historicFilter === 'dogfriendly' && isDogFriendly) {
+    priorityClass = 'dogfriendly';
+} else if (historicFilter === 'happyhour' && hasHappyHour) {
+    priorityClass = 'happyhour';
+} else if (historicFilter === 'afternoontea' && servesAfternoonTea) {
+    priorityClass = 'afternoontea';
+} else if (historicFilter === 'outdoor' && hasOutdoorSeating) {
+    priorityClass = 'outdoor';
+} else if (historicFilter === 'sports' && isSportsBar) {
+    priorityClass = 'sports';
+} else if (historicFilter === 'priority' && hasHistoric) {
+    priorityClass = 'priority';
+}
+// If filter is 'all', no special coloring (default white background)
             
             let badgesHTML = '<div class="pub-badges">';
             
