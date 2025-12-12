@@ -520,22 +520,24 @@
         let currentRouteData = null;
         let apiKey = '';
 
-        function initializeGoogleMaps() {
-            try {
-                geocoder = new google.maps.Geocoder();
-                directionsService = new google.maps.DirectionsService();
-                directionsRenderer = new google.maps.DirectionsRenderer({
-                    suppressMarkers: true,
-                    polylineOptions: {
-                        strokeColor: '#4285f4',
-                        strokeWeight: 5
-                    }
-                });
-                console.log('Google Maps services initialized');
-            } catch (error) {
-                console.error('Error initializing:', error);
+function initializeGoogleMaps() {
+    try {
+        geocoder = new google.maps.Geocoder();
+        directionsService = new google.maps.DirectionsService();
+        directionsRenderer = new google.maps.DirectionsRenderer({
+            suppressMarkers: true,
+            polylineOptions: {
+                strokeColor: '#4285f4',
+                strokeWeight: 5
             }
+        });
+        console.log('Google Maps services initialized');
+    } catch (error) {
+        console.error('Error initializing:', error);
+    }
+}  // ← This closes initializeGoogleMaps
 
+// NEW SEPARATE FUNCTION - Outside of initializeGoogleMaps
 function initializeAutocomplete() {
     const locationInput = document.querySelector('input[name="location"]');
     
@@ -544,27 +546,21 @@ function initializeAutocomplete() {
         return;
     }
     
-    // Create autocomplete object
     const autocomplete = new google.maps.places.Autocomplete(locationInput, {
         types: ['geocode', 'establishment'],
-        componentRestrictions: { country: 'gb' }  // Restrict to UK
+        componentRestrictions: { country: 'gb' }
     });
     
-    // When user selects a place from dropdown
     autocomplete.addListener('place_changed', function() {
         const place = autocomplete.getPlace();
         
         if (place.geometry) {
             console.log('Autocomplete selected:', place.formatted_address);
-            // The input now has the formatted address, ready to use
         }
     });
     
     console.log('✓ Autocomplete initialized');
 }
-
-
-        }
 
         async function searchPubs(location, numPubs, historicFilter, maxDistance, minRating, openNow, startingRadius) {
             showLoading();
