@@ -900,7 +900,7 @@ const converted = data.places.map(place => {
                                         'pet friendly', 'pet-friendly', 'pets welcome', 'pets allowed',
                                         'canine', 'pooch', 'dog bowl', 'dog treats', 'bring your dog'];
             
-            const wineBarKeywords = ['wine bar', 'wine pub', 'wine lounge', 'wine house', 'wine cellar', 'wine tavern'];
+            const wineBarKeywords = ['wine bar', 'wine pub', 'wine lounge', 'wine house', 'wine cellar', 'wine tavern', 'wines', 'wine shop', 'wine merchant', 'wine tasting'];
             
             const breweryKeywords = ['brewery', 'microbrewery', 'brewpub', 'brew pub', 'brewhouse', 'craft brewery', 'brewing company'];
             
@@ -995,7 +995,10 @@ if (!isTeaVenue || (!servesAfternoonTea && !hasAfternoonTeaKeyword)) {
                 
                 const hasWineBarKeyword = wineBarKeywords.some(keyword => combined.includes(keyword));
                 
-                if (!isWineVenue || !hasWineBarKeyword) {
+                // Accept if it has wine_bar type OR has wine keywords in a bar/restaurant
+                const isWineBar = pub.types.includes('wine_bar') || (isWineVenue && hasWineBarKeyword);
+                
+                if (!isWineBar) {
                     console.log('Filtered out (not a wine bar):', pub.name);
                     return false;
                 }
@@ -1296,7 +1299,7 @@ function displayResults(pubs) {
                                     'pet friendly', 'pet-friendly', 'pets welcome', 'pets allowed',
                                     'canine', 'pooch', 'dog bowl', 'dog treats', 'bring your dog'];
         
-        const wineBarKeywords = ['wine bar', 'wine pub', 'wine lounge', 'wine house', 'wine cellar', 'wine tavern'];
+        const wineBarKeywords = ['wine bar', 'wine pub', 'wine lounge', 'wine house', 'wine cellar', 'wine tavern', 'wines', 'wine shop', 'wine merchant', 'wine tasting'];
         
         const breweryKeywords = ['brewery', 'microbrewery', 'brewpub', 'brew pub', 'brewhouse', 'craft brewery', 'brewing company'];
         
@@ -1511,7 +1514,7 @@ if (historicFilter === 'dogfriendly' && isDogFriendly) {
         const matchedDogFriendlyKeywords = dogFriendlyKeywords.filter(kw => combined.includes(kw));
         const isDogFriendly = pub.allowsDogs || matchedDogFriendlyKeywords.length > 0;
         
-        const wineBarKeywords = ['wine bar', 'wine pub', 'wine lounge', 'wine house', 'wine cellar', 'wine tavern'];
+        const wineBarKeywords = ['wine bar', 'wine pub', 'wine lounge', 'wine house', 'wine cellar', 'wine tavern', 'wines', 'wine shop', 'wine merchant', 'wine tasting'];
         const matchedWineBarKeywords = wineBarKeywords.filter(kw => combined.includes(kw));
         const isWineBar = matchedWineBarKeywords.length > 0;
         
