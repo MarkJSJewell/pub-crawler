@@ -1165,6 +1165,9 @@ if (!isTeaVenue || (!servesAfternoonTea && !hasAfternoonTeaKeyword)) {
     }
 
 function displayResults(pubs) {
+    // Store pubs globally so they can be accessed by click handlers
+    currentPubs = pubs;
+    
     const bounds = new google.maps.LatLngBounds();
     pubs.forEach(pub => bounds.extend(pub.geometry.location));
     
