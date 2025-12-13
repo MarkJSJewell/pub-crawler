@@ -868,7 +868,9 @@ const converted = data.places.map(place => {
     };
     
     // Debug logging
-    console.log(`${pub.name}: allowsDogs=${place.allowsDogs}, outdoorSeating=${place.outdoorSeating}, sports=${place.goodForWatchingSports}`);
+    console.log(`${pub.name}:`);
+    console.log(`  - Types: [${pub.types.join(', ')}]`);
+    console.log(`  - allowsDogs=${place.allowsDogs}, outdoorSeating=${place.outdoorSeating}, sports=${place.goodForWatchingSports}`);
     
     return pub;
 });
@@ -994,13 +996,22 @@ if (!isTeaVenue || (!servesAfternoonTea && !hasAfternoonTeaKeyword)) {
                                    pub.types.includes('restaurant');
                 
                 const hasWineBarKeyword = wineBarKeywords.some(keyword => combined.includes(keyword));
+                const matchedKeywords = wineBarKeywords.filter(kw => combined.includes(kw));
                 
                 // Accept if it has wine_bar type OR has wine keywords in a bar/restaurant
                 const isWineBar = pub.types.includes('wine_bar') || (isWineVenue && hasWineBarKeyword);
                 
                 if (!isWineBar) {
-                    console.log('Filtered out (not a wine bar):', pub.name);
+                    console.log('❌ Filtered out (not a wine bar):', pub.name);
                     return false;
+                } else {
+                    console.log('✅ Wine bar included:', pub.name);
+                    console.log('   - Types:', pub.types);
+                    console.log('   - Has wine_bar type:', pub.types.includes('wine_bar'));
+                    console.log('   - Matched keywords:', matchedKeywords);
+                    console.log('   - Name:', pub.name);
+                    console.log('   - Editorial summary:', pub.editorial_summary || 'None');
+                    console.log('   - AI summary:', pub.ai_summary || 'None');
                 }
             }
             
