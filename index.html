@@ -329,17 +329,68 @@ function initializeAutocomplete() {
     
     console.log('✓ Autocomplete initialized (Global)');
 }
-        async function searchPubs(location, numPubs, historicFilter, maxDistance, minRating, openNow, startingRadius) {
+
+async function searchPubs(location, numPubs, historicFilter, maxDistance, minRating, openNow, startingRadius) {
             showLoading();
             window.currentFilterType = historicFilter;
 
             try {
-                const center = await geocodeLocation(location);
-                const startRadius = parseInt(startingRadius) || 1000;
-                let searchRadius = 1000;
-                const maxSearchRadius = maxDistance * 2;
+                let center, pubs;
                 
-                const pubs = await findPubs(center, searchRadius, historicFilter);
+                // 1. GENERATE CACHE KEY
+                // We key by Location + Filter because these determine the raw data fetch.
+                // We do NOT include maxDistance/numPubs here because we want to reuse the same 
+                // raw pub data even if the user changes their walking distance preference.
+                const cacheKey = `pub_cache_${btoa(location.toLowerCase() + '_' + historicFilter)}`;
+                
+                // 2. CHECK LOCAL STORAGE
+                const cachedData = localStorage.getItem(cacheKey);
+                let loadedFromCache = false;
+
+                if (cachedData) {
+                    try {
+                        const parsed = JSON.parse(cachedData);
+                        // Check if cache is less than 24 hours old (86400000 ms)
+                        if (Date.now() - parsed.timestamp < 86400000) {
+                            console.log('✓ Loading Geocode & Places from Local Storage');
+                            center = parsed.center;
+                            pubs = parsed.pubs;
+                            loadedFromCache = true;
+                        } else {
+                            console.log('Cache expired, fetching fresh data...');
+                            localStorage.removeItem(cacheKey);
+                        }
+                    } catch (e) {
+                        console.error('Cache parse error', e);
+                        localStorage.removeItem(cacheKey);
+                    }
+                }
+
+                // 3. FETCH FROM API (If not in cache)
+                if (!loadedFromCache) {
+                    console.log('Fetching fresh data from API...');
+                    center = await geocodeLocation(location);
+                    
+                    // We fetch a standard set (e.g. 1000m radius) to cache a good baseline
+                    const startRadius = parseInt(startingRadius) || 1000;
+                    pubs = await findPubs(center, 1000, historicFilter);
+                    
+                    // Save to Local Storage
+                    localStorage.setItem(cacheKey, JSON.stringify({
+                        center: center,
+                        pubs: pubs,
+                        timestamp: Date.now()
+                    }));
+                }
+
+                // ---------------------------------------------------------
+                // The rest of the logic (Filtering & Routing) runs locally
+                // using the data we just got (either from Cache or API).
+                // ---------------------------------------------------------
+
+                const startRadius = parseInt(startingRadius) || 1000;
+                
+                // Filter the pubs (Client-side)
                 const filteredPubs = filterPubs(pubs, historicFilter, minRating, openNow);
                 
                 if (filteredPubs.length === 0) {
@@ -362,12 +413,13 @@ function initializeAutocomplete() {
                 const firstPub = allPubsSorted.find(pub => pub.distance <= startRadius);
 
                 if (!firstPub) {
-                    showError(`No venues found within ${(startRadius / 1000).toFixed(1)}km of your location. Try increasing the starting distance or choosing a different location.`);
+                    showError(`No venues found within ${(startRadius / 1000).toFixed(1)}km of your location. Try increasing the starting distance.`);
                     return;
                 }
 
                 // Route logic
                 const pubsForRoute = allPubsSorted.filter(pub => pub.distance <= maxDistance);
+                // Ensure we don't duplicate the first pub if it's also in the general list
                 const sortedPubs = [firstPub, ...pubsForRoute.filter(p => p.place_id !== firstPub.place_id)];
                 
                 let bestRoute = null;
@@ -377,9 +429,14 @@ function initializeAutocomplete() {
                 const requestedNum = parseInt(numPubs);
                 const maxPubsToTry = Math.min(requestedNum, sortedPubs.length);
                 
+                // We iterate downwards to find the best route that fits the distance
                 for (let numToTry = maxPubsToTry; numToTry >= 2; numToTry--) {
                     const candidatePubs = sortedPubs.slice(0, numToTry);
                     const optimized = optimizeRoute(candidatePubs, center);
+                    
+                    // NOTE: calculatedDirections calls the Directions API. 
+                    // This is "cheap" ($0.005) compared to Places ($0.03+), so we run it live 
+                    // to ensure the route is valid for the current selection.
                     const directionsResult = await calculateDirections(optimized);
                     
                     if (directionsResult && directionsResult.routes && directionsResult.routes[0]) {
@@ -424,6 +481,8 @@ function initializeAutocomplete() {
                 
             } catch (error) {
                 console.error('Search error:', error);
+                // If cache fails, we might want to clear it
+                if (error.name === 'SyntaxError') localStorage.clear();
                 showError('Search failed: ' + error.message);
             }
         }
