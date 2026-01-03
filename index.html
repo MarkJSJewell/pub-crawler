@@ -746,18 +746,122 @@ function displaySummary(pubs) {
             `;
         }
 
-        function displayPubList(pubs, historicFilter) {
-            const list = document.getElementById('pub-list');
-            list.innerHTML = pubs.map((pub, index) => {
-                return `
-                    <div class="pub-card" onclick="showPubDetails(currentPubs[${index}])">
-                        <div class="pub-title">${index + 1}. ${pub.name}</div>
-                        <div class="pub-rating"><span class="stars">${'★'.repeat(Math.floor(pub.rating))}</span> ${pub.rating.toFixed(1)}</div>
-                        <div class="pub-address">${pub.vicinity}</div>
+function displayPubList(pubs, historicFilter) {
+        const list = document.getElementById('pub-list');
+        
+        // --- KEYWORD DEFINITIONS (Same as before) ---
+        const historicKeywords = ['historic', 'old', 'traditional', 'victorian', 'heritage', 'ancient', 'inn', 'tavern', 'tudor', 'medieval'];
+        const sportsKeywords = ['sports', 'game', 'screen', 'tv', 'match'];
+        const outdoorKeywords = ['beer garden', 'garden', 'outdoor', 'terrace', 'patio', 'rooftop'];
+        const afternoonTeaKeywords = ['afternoon tea', 'high tea', 'tea room', 'scones'];
+        const happyHourKeywords = ['happy hour', 'drink specials', '2 for 1', 'cocktail hour'];
+        const dogFriendlyKeywords = ['dog friendly', 'dogs welcome', 'pets allowed', 'dog bowl'];
+
+        list.innerHTML = pubs.map((pub, index) => {
+            // --- 1. FILTER & BADGE LOGIC ---
+            const name = pub.name.toLowerCase();
+            const summary = (pub.editorial_summary || '').toLowerCase();
+            const combined = name + ' ' + summary;
+
+            // Check criteria matches
+            const hasHistoric = historicKeywords.some(kw => combined.includes(kw));
+            const isSports = pub.goodForWatchingSports || sportsKeywords.some(kw => combined.includes(kw));
+            const hasOutdoor = pub.outdoorSeating || outdoorKeywords.some(kw => combined.includes(kw));
+            const hasTea = pub.servesAfternoonTea || afternoonTeaKeywords.some(kw => combined.includes(kw));
+            const hasHappyHour = happyHourKeywords.some(kw => combined.includes(kw));
+            const isDogFriendly = pub.allowsDogs || dogFriendlyKeywords.some(kw => combined.includes(kw));
+
+            // Generate Badge HTML
+            let badgesHTML = '<div class="pub-badges" style="margin-top: 4px;">';
+            if (hasHistoric) badgesHTML += '<span class="badge badge-priority">🏛️ Historic</span>';
+            if (isSports) badgesHTML += '<span class="badge badge-sports">⚽ Sports</span>';
+            if (hasOutdoor) badgesHTML += '<span class="badge badge-outdoor">🌳 Garden</span>';
+            if (hasTea) badgesHTML += '<span class="badge badge-afternoontea">🫖 Tea</span>';
+            if (hasHappyHour) badgesHTML += '<span class="badge badge-happyhour">🍻 Deals</span>';
+            if (isDogFriendly) badgesHTML += '<span class="badge badge-dogfriendly">🐕 Dog Friendly</span>';
+            badgesHTML += '</div>';
+
+            const badgesDisplay = (hasHistoric||isSports||hasOutdoor||hasTea||hasHappyHour||isDogFriendly) ? badgesHTML : '';
+
+            // Color coding border based on filter selection
+            let priorityClass = '';
+            if (historicFilter === 'priority' && hasHistoric) priorityClass = 'priority';
+            else if (historicFilter === 'sports' && isSports) priorityClass = 'sports';
+            else if (historicFilter === 'outdoor' && hasOutdoor) priorityClass = 'outdoor';
+            else if (historicFilter === 'dogfriendly' && isDogFriendly) priorityClass = 'dogfriendly';
+
+
+            // --- 2. DISTANCE & ROUTE DISPLAY (NEW) ---
+            let distanceHtml = '';
+            if (index === 0) {
+                // First pub: Show distance from Search Location
+                const distKm = (pub.distance / 1000).toFixed(2);
+                distanceHtml = `
+                    <div style="margin-top: 8px; padding: 6px 0; border-top: 1px dashed #e8eaed; font-size: 13px; color: #1a73e8; display: flex; align-items: center; gap: 6px;">
+                        <span>📍</span> 
+                        <strong>Start Here</strong> 
+                        <span style="color: #70757a;">(~${distKm} km from search)</span>
+                    </div>`;
+            } else {
+                // Subsequent pubs: Show distance from previous pub (using Route Legs)
+                // Leg 0 matches path from Pub 1 -> Pub 2. So for Index 1, we use Leg 0.
+                if (window.currentRouteData && window.currentRouteData.routes[0] && window.currentRouteData.routes[0].legs[index - 1]) {
+                    const leg = window.currentRouteData.routes[0].legs[index - 1];
+                    distanceHtml = `
+                        <div style="margin-top: 8px; padding: 6px 0; border-top: 1px dashed #e8eaed; font-size: 13px; color: #1a73e8; display: flex; align-items: center; gap: 6px;">
+                            <span>🚶</span> 
+                            <strong>Walk ${leg.distance.text}</strong> 
+                            <span style="color: #70757a;">(${leg.duration.text} from previous)</span>
+                        </div>`;
+                }
+            }
+
+
+            // --- 3. OPENING HOURS (NEW) ---
+            let hoursHtml = '';
+            if (pub.today_hours) {
+                hoursHtml = `<div style="font-size: 12px; color: #5f6368; margin-top: 4px;">🕒 ${pub.today_hours}</div>`;
+            } else if (pub.opening_hours) {
+                // Fallback to Open/Closed status if specific text is missing
+                const isOpen = pub.opening_hours.open_now;
+                const color = isOpen ? '#137333' : '#d93025'; // Green or Red
+                hoursHtml = `<div style="font-size: 12px; color: ${color}; margin-top: 4px; font-weight: 500;">
+                    ${isOpen ? '● Open Now' : '● Closed'}
+                </div>`;
+            }
+
+
+            // --- 4. AI SUMMARY (UPDATED UI) ---
+            const summaryText = pub.ai_summary || pub.editorial_summary;
+            const summaryHtml = summaryText ? `
+                <div style="background: #f8f9fa; border-left: 3px solid #1a73e8; padding: 10px; margin-top: 10px; border-radius: 0 4px 4px 0;">
+                    <strong style="font-size: 11px; color: #1a73e8; text-transform: uppercase; letter-spacing: 0.5px;">✨ AI Summary</strong>
+                    <p style="font-size: 13px; color: #3c4043; margin-top: 4px; line-height: 1.5;">${summaryText}</p>
+                </div>` : '';
+
+
+            // --- RENDER CARD ---
+            return `
+                <div class="pub-card ${priorityClass}" onclick="showPubDetails(currentPubs[${index}])">
+                    <div style="display:flex; justify-content:space-between; align-items:start;">
+                        <div class="pub-title" style="font-weight:500;">${index + 1}. ${pub.name}</div>
+                        <div class="pub-rating" style="white-space:nowrap;">
+                            <span class="stars" style="color:#fbbc04;">★</span> 
+                            ${pub.rating ? pub.rating.toFixed(1) : '--'}
+                            <span style="color:#9aa0a6; font-size:11px;">(${pub.user_ratings_total || 0})</span>
+                        </div>
                     </div>
-                `;
-            }).join('');
-        }
+
+                    <div class="pub-address">${pub.vicinity || ''}</div>
+                    
+                    ${badgesDisplay}
+                    ${hoursHtml}
+                    ${distanceHtml}
+                    ${summaryHtml}
+                </div>
+            `;
+        }).join('');
+    }
 
         function showPubDetails(pub) {
             const modal = document.getElementById('pub-modal');
