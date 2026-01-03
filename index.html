@@ -338,9 +338,6 @@ async function searchPubs(location, numPubs, historicFilter, maxDistance, minRat
                 let center, pubs;
                 
                 // 1. GENERATE CACHE KEY
-                // We key by Location + Filter because these determine the raw data fetch.
-                // We do NOT include maxDistance/numPubs here because we want to reuse the same 
-                // raw pub data even if the user changes their walking distance preference.
                 const cacheKey = `pub_cache_${btoa(location.toLowerCase() + '_' + historicFilter)}`;
                 
                 // 2. CHECK LOCAL STORAGE
@@ -350,18 +347,35 @@ async function searchPubs(location, numPubs, historicFilter, maxDistance, minRat
                 if (cachedData) {
                     try {
                         const parsed = JSON.parse(cachedData);
-                        // Check if cache is less than 24 hours old (7776000000 ms)
+                        
+                        // Check expiry (24 hours)
                         if (Date.now() - parsed.timestamp < 86400000) {
-                            console.log('✓ Loading Geocode & Places from Local Storage');
+                            console.log('✓ Loading from Local Storage...');
                             center = parsed.center;
-                            pubs = parsed.pubs;
+                            
+                            // --- REHYDRATION FIX ---
+                            // We must convert the plain JSON coordinates back into Google Maps objects
+                            // so that functions like .lat() and geometry calculations work again.
+                            pubs = parsed.pubs.map(pub => {
+                                return {
+                                    ...pub,
+                                    geometry: {
+                                        location: new google.maps.LatLng(
+                                            pub.geometry.location.lat, 
+                                            pub.geometry.location.lng
+                                        )
+                                    }
+                                };
+                            });
+                            // -----------------------
+                            
                             loadedFromCache = true;
                         } else {
-                            console.log('Cache expired, fetching fresh data...');
+                            console.log('Cache expired.');
                             localStorage.removeItem(cacheKey);
                         }
                     } catch (e) {
-                        console.error('Cache parse error', e);
+                        console.error('Cache error:', e);
                         localStorage.removeItem(cacheKey);
                     }
                 }
@@ -371,17 +385,108 @@ async function searchPubs(location, numPubs, historicFilter, maxDistance, minRat
                     console.log('Fetching fresh data from API...');
                     center = await geocodeLocation(location);
                     
-                    // We fetch a standard set (e.g. 1000m radius) to cache a good baseline
                     const startRadius = parseInt(startingRadius) || 1000;
                     pubs = await findPubs(center, 1000, historicFilter);
                     
                     // Save to Local Storage
+                    // Note: Google Maps LatLng objects serialize automatically to {lat: x, lng: y}
                     localStorage.setItem(cacheKey, JSON.stringify({
                         center: center,
                         pubs: pubs,
                         timestamp: Date.now()
                     }));
                 }
+
+                // --- REST OF THE LOGIC REMAINS THE SAME ---
+                
+                // Filter the pubs
+                const filteredPubs = filterPubs(pubs, historicFilter, minRating, openNow);
+                
+                if (filteredPubs.length === 0) {
+                    showError(`No venues found in this area. Try a different location or adjust your filters.`);
+                    return;
+                }
+
+                // Sort ALL filtered pubs by distance
+                const allPubsSorted = filteredPubs
+                    .map(pub => {
+                        const distance = google.maps.geometry.spherical.computeDistanceBetween(
+                            new google.maps.LatLng(center.lat, center.lng),
+                            pub.geometry.location
+                        );
+                        return { ...pub, distance };
+                    })
+                    .sort((a, b) => a.distance - b.distance);
+
+                const startRadius = parseInt(startingRadius) || 1000;
+                const firstPub = allPubsSorted.find(pub => pub.distance <= startRadius);
+
+                if (!firstPub) {
+                    showError(`No venues found within ${(startRadius / 1000).toFixed(1)}km of your location.`);
+                    return;
+                }
+
+                // Route logic
+                const pubsForRoute = allPubsSorted.filter(pub => pub.distance <= maxDistance);
+                const sortedPubs = [firstPub, ...pubsForRoute.filter(p => p.place_id !== firstPub.place_id)];
+                
+                let bestRoute = null;
+                let bestRouteDistance = Infinity;
+                let bestRoutePubs = null;
+                
+                const requestedNum = parseInt(numPubs);
+                const maxPubsToTry = Math.min(requestedNum, sortedPubs.length);
+                
+                for (let numToTry = maxPubsToTry; numToTry >= 2; numToTry--) {
+                    const candidatePubs = sortedPubs.slice(0, numToTry);
+                    const optimized = optimizeRoute(candidatePubs, center);
+                    const directionsResult = await calculateDirections(optimized);
+                    
+                    if (directionsResult && directionsResult.routes && directionsResult.routes[0]) {
+                        const routeDistance = directionsResult.routes[0].legs.reduce(
+                            (sum, leg) => sum + leg.distance.value, 0
+                        );
+                        
+                        if (routeDistance < bestRouteDistance) {
+                            bestRouteDistance = routeDistance;
+                            bestRoutePubs = optimized;
+                            bestRoute = directionsResult;
+                        }
+                        
+                        if (routeDistance <= maxDistance) {
+                            currentRouteData = directionsResult;
+                            if (numToTry < requestedNum) {
+                                window.insufficientPubs = { found: numToTry, requested: requestedNum, reason: 'distance' };
+                            } else {
+                                window.insufficientPubs = null;
+                            }
+                            displayResults(optimized);
+                            return;
+                        }
+                    }
+                }
+
+                 if (bestRoutePubs && bestRoutePubs.length >= 2) {
+                    window.insufficientPubs = {
+                        found: bestRoutePubs.length,
+                        requested: requestedNum,
+                        reason: 'distance',
+                        actualDistance: bestRouteDistance,
+                        maxDistance: maxDistance
+                    };
+                    currentRouteData = bestRoute;
+                    displayResults(bestRoutePubs);
+                 } else {
+                     showError('Could not create a walking route in this area. Try increasing the maximum walking distance.');
+                 }
+                
+            } catch (error) {
+                console.error('Search error:', error);
+                // Clear cache on error to prevent getting stuck
+                if (error.message.includes('not a function')) localStorage.clear();
+                showError('Search failed: ' + error.message);
+            }
+        }
 
                 // ---------------------------------------------------------
                 // The rest of the logic (Filtering & Routing) runs locally
