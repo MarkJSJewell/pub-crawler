@@ -304,32 +304,31 @@
         }
 
         // MOVED OUTSIDE of initializeGoogleMaps to be globally accessible
-        function initializeAutocomplete() {
-            const locationInput = document.querySelector('input[name="location"]');
-            
-            if (!locationInput) {
-                console.error('Location input not found');
-                return;
-            }
-            
-            // Create autocomplete object
-            const autocomplete = new google.maps.places.Autocomplete(locationInput, {
-                types: ['geocode', 'establishment'],
-                componentRestrictions: { country: 'gb' }  // Restrict to UK
-            });
-            
-            // When user selects a place from dropdown
-            autocomplete.addListener('place_changed', function() {
-                const place = autocomplete.getPlace();
-                
-                if (place.geometry) {
-                    console.log('Autocomplete selected:', place.formatted_address);
-                }
-            });
-            
-            console.log('✓ Autocomplete initialized');
+function initializeAutocomplete() {
+    const locationInput = document.querySelector('input[name="location"]');
+    
+    if (!locationInput) {
+        console.error('Location input not found');
+        return;
+    }
+    
+    // Create autocomplete object WITHOUT country restrictions
+    const autocomplete = new google.maps.places.Autocomplete(locationInput, {
+        types: ['geocode', 'establishment'],
+        // componentRestrictions: { country: 'gb' }  <-- REMOVED THIS LINE
+    });
+    
+    // When user selects a place from dropdown
+    autocomplete.addListener('place_changed', function() {
+        const place = autocomplete.getPlace();
+        
+        if (place.geometry) {
+            console.log('Autocomplete selected:', place.formatted_address);
         }
-
+    });
+    
+    console.log('✓ Autocomplete initialized (Global)');
+}
         async function searchPubs(location, numPubs, historicFilter, maxDistance, minRating, openNow, startingRadius) {
             showLoading();
             window.currentFilterType = historicFilter;
