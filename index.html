@@ -350,7 +350,7 @@ async function searchPubs(location, numPubs, historicFilter, maxDistance, minRat
                 if (cachedData) {
                     try {
                         const parsed = JSON.parse(cachedData);
-                        // Check if cache is less than 24 hours old (86400000 ms)
+                        // Check if cache is less than 24 hours old (7776000000 ms)
                         if (Date.now() - parsed.timestamp < 86400000) {
                             console.log('✓ Loading Geocode & Places from Local Storage');
                             center = parsed.center;
