@@ -682,46 +682,49 @@ async function searchPubs(location, numPubs, historicFilter, maxDistance, minRat
             });
         }
 
-        function displayResults(pubs) {
-            const bounds = new google.maps.LatLngBounds();
-            pubs.forEach(pub => bounds.extend(pub.geometry.location));
-            
-            map = new google.maps.Map(document.getElementById('map'), {
-                zoom: 14, center: bounds.getCenter(), zoomControl: true, mapTypeControl: false, streetViewControl: false, fullscreenControl: true
-            });
-            
-            map.fitBounds(bounds);
-            
-            if (currentRouteData) {
-                directionsRenderer.setMap(map);
-                directionsRenderer.setDirections(currentRouteData);
-            }
-            
-            pubs.forEach((pub, index) => {
-                const marker = new google.maps.Marker({
-                    position: pub.geometry.location,
-                    map: map,
-                    label: { text: (index + 1).toString(), color: 'white', fontWeight: 'bold', fontSize: '14px' },
-                    title: pub.name
-                });
-                marker.addListener('click', () => showPubDetails(pub));
-            });
-            
-            currentPubs = pubs;
-            displaySummary(pubs);
-            displayPubList(pubs, window.currentFilterType || 'all');
-            
-            document.getElementById('results-layout').style.display = 'block';
-            setTimeout(() => {
-                document.getElementById('results-layout').scrollIntoView({ behavior: 'smooth', block: 'start' });
-            }, 100);
-        }
-
-        function displaySummary(pubs) {
+function displaySummary(pubs) {
             const summary = document.getElementById('route-summary');
             const totalDistance = currentRouteData ? currentRouteData.routes[0].legs.reduce((sum, leg) => sum + leg.distance.value, 0) : 0;
             const totalDuration = currentRouteData ? currentRouteData.routes[0].legs.reduce((sum, leg) => sum + leg.duration.value, 0) : 0;
+            const routeKm = (totalDistance / 1000).toFixed(1);
+
+            // --- NEW: CALORIE & FITNESS LOGIC ---
+            // Assumptions: 
+            // 1 Drink = ~250 calories (Pint of beer / Large glass of wine)
+            // Walking Burn = ~60 calories per km (Average adult)
+            const AVG_CALORIES_PER_DRINK = 250; 
+            const CALORIES_BURNED_PER_KM = 60; 
             
+            const totalDrinksCalories = pubs.length * AVG_CALORIES_PER_DRINK;
+            const kmNeededToBurn = (totalDrinksCalories / CALORIES_BURNED_PER_KM).toFixed(1);
+            
+            const difference = (parseFloat(routeKm) - parseFloat(kmNeededToBurn)).toFixed(1);
+            const isSurplus = parseFloat(difference) >= 0;
+
+            let calorieHtml = `
+                <div style="background: #f1f3f4; border-left: 4px solid #5f6368; padding: 12px; margin: 12px 0; border-radius: 4px;">
+                    <strong style="color: #202124;">🍺 Calorie Challenge</strong>
+                    <p style="font-size: 13px; color: #3c4043; margin-top: 6px; line-height: 1.5;">
+                        <strong>${pubs.length} drinks</strong> = ~${totalDrinksCalories} calories.
+                        <br>You need to walk <strong>${kmNeededToBurn}km</strong> to burn this off.
+                    </p>
+            `;
+
+            if (isSurplus) {
+                calorieHtml += `
+                    <p style="font-size: 13px; color: #137333; margin-top: 6px; font-weight: 500;">
+                        ✅ Good news! This route is ${routeKm}km, so you'll burn everything off plus extra!
+                    </p>
+                </div>`;
+            } else {
+                calorieHtml += `
+                    <p style="font-size: 13px; color: #ea4335; margin-top: 6px; font-weight: 500;">
+                        ⚠️ This route is only ${routeKm}km. You'll still have ${Math.abs(difference)}km worth of "liquid energy" left!
+                    </p>
+                </div>`;
+            }
+            // -------------------------------------
+
             let warningHtml = '';
             if (window.insufficientPubs) {
                 const info = window.insufficientPubs;
@@ -736,8 +739,9 @@ async function searchPubs(location, numPubs, historicFilter, maxDistance, minRat
             summary.innerHTML = `
                 <h3>Your Pub Crawl Route</h3>
                 <p><strong>${pubs.length} stops</strong></p>
-                <p>${(totalDistance / 1000).toFixed(1)} km walking distance</p>
+                <p>${routeKm} km walking distance</p>
                 <p>~${Math.round(totalDuration / 60)} minutes walking time</p>
+                ${calorieHtml}
                 ${warningHtml}
             `;
         }
