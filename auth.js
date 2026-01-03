@@ -1,62 +1,58 @@
-/* auth.js - Integrated with Geoapify and Caching */
+// auth.js
 
-const GEOAPIFY_KEY = "d03bb74f01814b35968d70860130b3fc"; // Get this from geoapify.com
+// Initialize Firebase App
+firebase.initializeApp(firebaseConfig);
 
+// [FIXED] Initialize Firebase App Check for Compat v10
+const appCheck = firebase.appCheck();
+appCheck.activate(
+    '6Ld_OCgsAAAAAAgEbt4nOW6wuO0cJKI9bEo80fae', 
+    true // Enable automatic token refresh
+);
+console.log('Firebase App Check initialized');
+
+// Initialize the 2025 Places Autocomplete
 function initializeAutocomplete() {
-    const autocomplete = new autocomplete.GeocoderAutocomplete(
-        document.getElementById("autocomplete-container"), 
-        GEOAPIFY_KEY, 
-        { 
-            placeholder: "Enter a location",
-            skipIcons: true,
-            allowNonVerifiedStreet: true 
-        }
-    );
+    const autocompleteElement = document.getElementById('location-autocomplete');
+    if (!autocompleteElement) return;
 
-    autocomplete.on('select', (location) => {
-        if (location) {
-            // Set the hidden or global location value for the search form
-            window.selectedLocation = location.properties.formatted;
-            console.log('Location selected via Geoapify:', window.selectedLocation);
-        }
+    // Listener for the new 'gmp-select' event
+    autocompleteElement.addEventListener('gmp-select', async (event) => {
+        const place = event.detail.place;
+        if (!place) return;
+
+        // Fetch required fields for the new Places API
+        await place.fetchFields({ fields: ['location', 'displayName', 'formattedAddress'] });
+        
+        // Store globally to use in your search logic
+        window.selectedLocationCoords = place.location;
+        console.log('✓ Location selected:', place.displayName);
     });
 }
 
 // Check authentication state
 firebase.auth().onAuthStateChanged((user) => {
     if (user) {
-        // Initialize the app and Autocomplete
         initializeApp();
-        initializeAutocomplete();
     } else {
         window.location.href = 'login.html';
     }
 });
 
-/**
- * CACHING UTILITY
- * Call this before your API fetches to reduce redundant requests.
- */
-function getFromCache(key) {
-    const item = localStorage.getItem(key);
-    if (!item) return null;
+// Load Google Maps and trigger initialization
+async function fetchApiKeyAndInitialize() {
+    // ... existing token fetch logic ...
+    const data = await response.json();
     
-    const parsed = JSON.parse(item);
-    const now = new Date();
-    
-    // Check if cache is older than 24 hours
-    if (now.getTime() > parsed.expiry) {
-        localStorage.removeItem(key);
-        return null;
-    }
-    return parsed.value;
+    // Add 'places' library and ensure 'loading=async' for new features
+    const script = document.createElement('script');
+    script.src = `https://maps.googleapis.com/maps/api/js?key=${data.apiKey}&libraries=places,geometry&loading=async&callback=initGoogleMapsCallback`;
+    script.async = true;
+    document.head.appendChild(script);
 }
 
-function setInCache(key, value, ttlSeconds = 86400) {
-    const now = new Date();
-    const item = {
-        value: value,
-        expiry: now.getTime() + (ttlSeconds * 1000),
-    };
-    localStorage.setItem(key, JSON.stringify(item));
-}
+window.initGoogleMapsCallback = function() {
+    window.googleMapsLoaded = true;
+    initializeGoogleMaps(); 
+    initializeAutocomplete(); // Trigger the new autocomplete setup
+};

@@ -4,49 +4,33 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Pub Crawl Planner</title>
-    <link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/npm/@geoapify/geocoder-autocomplete@3.0.1/styles/minimal.css">
+    <script type="module" src="https://ajax.googleapis.com/ajax/libs/google-maps-components/0.3.0/google-maps-components.esm.js"></script>
     <style>
-        /* Existing Styles... */
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-        body { font-family: 'Google Sans', 'Roboto', Arial, sans-serif; background: #fff; color: #202124; padding-top: 80px; }
+        /* ... existing base styles ... */
+        body { font-family: 'Google Sans', 'Roboto', Arial, sans-serif; background: #fff; padding-top: 80px; }
         
-        /* [MODIFIED] Force White Background on Cards */
+        /* [UPDATED] Clean White Backgrounds for Results */
         .pub-card {
-            background: #ffffff !important;
+            background: #ffffff !important; /* Force white background */
             border-bottom: 1px solid #e8eaed;
             padding: 16px 20px;
             cursor: pointer;
-            transition: background 0.2s;
+            border-left: 4px solid transparent;
         }
-
         .pub-card:hover { background: #f8f9fa !important; }
 
-        /* Remove category background colors, keep left border only */
-        .pub-card.priority, .pub-card.sports, .pub-card.outdoor, 
-        .pub-card.afternoontea, .pub-card.happyhour, .pub-card.dogfriendly, 
-        .pub-card.winebar, .pub-card.brewery {
-            background: #ffffff !important;
-        }
-
-        /* Border Branding remains for context */
-        .pub-card.priority { border-left: 4px solid #fbbc04; }
-        .pub-card.sports { border-left: 4px solid #34a853; }
-        .pub-card.outdoor { border-left: 4px solid #1a73e8; }
-        .pub-card.afternoontea { border-left: 4px solid #ea4335; }
-        .pub-card.happyhour { border-left: 4px solid #fbbc04; }
-        .pub-card.dogfriendly { border-left: 4px solid #9334e6; }
-        .pub-card.winebar { border-left: 4px solid #c41e3a; }
-        .pub-card.brewery { border-left: 4px solid #ff6f00; }
-
-        /* [NEW] Custom Autocomplete Styling for Geoapify */
-        #autocomplete-container { position: relative; width: 100%; }
-        .geoapify-autocomplete-input {
-            width: 100%;
-            padding: 12px 16px;
-            border: 1px solid #dadce0;
-            border-radius: 4px;
-            font-size: 14px;
-        }
+        /* Maintain only the side-border colors for category identification */
+        .pub-card.priority { border-left-color: #fbbc04; }
+        .pub-card.sports { border-left-color: #34a853; }
+        .pub-card.outdoor { border-left-color: #1a73e8; }
+        .pub-card.afternoontea { border-left-color: #ea4335; }
+        .pub-card.happyhour { border-left-color: #fbbc04; }
+        .pub-card.dogfriendly { border-left-color: #9334e6; }
+        .pub-card.winebar { border-left-color: #c41e3a; }
+        .pub-card.brewery { border-left-color: #ff6f00; }
+        
+        /* [NEW] Autocomplete element styling */
+        gmp-place-autocomplete { width: 100%; }
     </style>
 </head>
 <body>
@@ -55,62 +39,52 @@
             <form id="search-form">
                 <div class="form-group">
                     <label>Location</label>
-                    <div id="autocomplete-container"></div>
+                    <gmp-place-autocomplete id="location-autocomplete" placeholder="Enter a location"></gmp-place-autocomplete>
                 </div>
-                
                 <button type="submit" class="search-btn">Search</button>
             </form>
         </div>
-
-        <div class="results-layout" id="results-layout">
-            <div class="results-sidebar">
-                <div class="route-summary" id="route-summary"></div>
-                <div class="pub-list" id="pub-list"></div>
-            </div>
-            <div class="results-map"><div id="map"></div></div>
         </div>
-    </div>
 
-    <script src="https://cdn.jsdelivr.net/npm/@geoapify/geocoder-autocomplete@3.0.1/dist/index.min.js"></script>
     <script>
-        // Updated search function with caching
         async function searchPubs(location, numPubs, historicFilter, maxDistance, minRating, openNow, startingRadius) {
             showLoading();
             window.currentFilterType = historicFilter;
 
+            // [NEW] Local Storage Caching Logic
+            const cacheKey = `pubs_${btoa(location + historicFilter + maxDistance + minRating)}`;
+            const cached = localStorage.getItem(cacheKey);
+            
+            if (cached) {
+                const { data, timestamp } = JSON.parse(cached);
+                // Expire cache after 24 hours
+                if (Date.now() - timestamp < 86400000) {
+                    console.log('✓ Loading results from LocalStorage cache');
+                    displayResults(data);
+                    return;
+                }
+            }
+
             try {
-                // Generate a unique cache key based on search parameters
-                const cacheKey = `pubs_${btoa(location + historicFilter + maxDistance + minRating)}`;
-                const cached = localStorage.getItem(cacheKey);
+                const center = await geocodeLocation(location);
+                const pubs = await findPubs(center, 1000, historicFilter);
                 
-                let pubs;
-                if (cached) {
-                    const parsed = JSON.parse(cached);
-                    // Expire cache after 24 hours
-                    if (Date.now() - parsed.timestamp < 86400000) {
-                        console.log('Loading from LocalStorage cache...');
-                        pubs = parsed.data;
-                    }
-                }
+                // [NEW] Save to Local Storage
+                localStorage.setItem(cacheKey, JSON.stringify({
+                    data: pubs,
+                    timestamp: Date.now()
+                }));
 
-                if (!pubs) {
-                    const center = await geocodeLocation(location);
-                    pubs = await findPubs(center, 1000, historicFilter);
-                    // Store results in cache
-                    localStorage.setItem(cacheKey, JSON.stringify({
-                        data: pubs,
-                        timestamp: Date.now()
-                    }));
-                }
-
-                // ... Remaining logic for optimizeRoute and displayResults ...
+                displayResults(pubs);
             } catch (error) {
                 showError(error.message);
             }
         }
     </script>
+
     <script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-app-check-compat.js"></script>
     <script src="auth.js"></script>
 </body>
 </html>
