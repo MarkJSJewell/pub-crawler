@@ -7,26 +7,10 @@
     <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🍺</text></svg>">
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
-        body {
-            font-family: 'Google Sans', 'Roboto', Arial, sans-serif;
-            background: #fff;
-            min-height: 100vh;
-            color: #202124;
-            padding-top: 80px;
-        }
-
-        /* Header & Navigation */
-        .header {
-            position: fixed;
-            top: 0; left: 0; right: 0;
-            background: #fff;
-            padding: 20px;
-            border-bottom: 1px solid #dadce0;
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            z-index: 1000;
-        }
+        body { font-family: 'Google Sans', 'Roboto', Arial, sans-serif; background: #fff; min-height: 100vh; color: #202124; padding-top: 80px; }
+        
+        /* Header */
+        .header { position: fixed; top: 0; left: 0; right: 0; background: #fff; padding: 20px; border-bottom: 1px solid #dadce0; display: flex; align-items: center; justify-content: space-between; z-index: 1000; }
         .header-left { display: flex; align-items: center; gap: 16px; }
         .google-logo { display: flex; align-items: center; gap: 8px; font-size: 22px; font-weight: 400; color: #5f6368; }
         .logo-text { display: flex; gap: 2px; }
@@ -40,79 +24,36 @@
 
         /* Search Form */
         .search-container { max-width: 800px; margin: 24px auto; padding: 0 20px; }
-        .search-form {
-            background: white;
-            padding: 24px;
-            border-radius: 8px;
-            box-shadow: 0 1px 2px 0 rgba(60,64,67,.3), 0 1px 3px 1px rgba(60,64,67,.15);
-        }
+        .search-form { background: white; padding: 24px; border-radius: 8px; box-shadow: 0 1px 2px 0 rgba(60,64,67,.3), 0 1px 3px 1px rgba(60,64,67,.15); }
         .form-group { margin-bottom: 16px; }
         .form-group label { display: block; margin-bottom: 8px; font-weight: 500; color: #3c4043; font-size: 14px; }
-        .form-group input, .form-group select {
-            width: 100%;
-            padding: 12px 16px;
-            border: 1px solid #dadce0;
-            border-radius: 4px;
-            font-size: 14px;
-            background: white;
-            color: #3c4043;
-        }
+        .form-group input, .form-group select { width: 100%; padding: 12px 16px; border: 1px solid #dadce0; border-radius: 4px; font-size: 14px; background: white; color: #3c4043; }
         .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
-        
-        .search-btn {
-            background: #1a73e8;
-            color: white;
-            border: none;
-            padding: 12px 24px;
-            font-size: 14px;
-            font-weight: 500;
-            border-radius: 4px;
-            cursor: pointer;
-            width: 100%;
-        }
+        .search-btn { background: #1a73e8; color: white; border: none; padding: 12px 24px; font-size: 14px; font-weight: 500; border-radius: 4px; cursor: pointer; width: 100%; }
 
-        /* Results Area */
-        .results-layout {
-            display: none;
-            max-width: 800px;
-            margin: 24px auto;
-            padding: 0 20px;
-        }
+        /* Results */
+        .results-layout { display: none; max-width: 800px; margin: 24px auto; padding: 0 20px; }
         .results-sidebar { background: #fff; }
-        .results-map {
-            width: 100%;
-            height: 500px;
-            margin-top: 24px;
-            border-radius: 8px;
-            overflow: hidden;
-            box-shadow: 0 1px 2px 0 rgba(60,64,67,.3), 0 1px 3px 1px rgba(60,64,67,.15);
-        }
+        .results-map { width: 100%; height: 500px; margin-top: 24px; border-radius: 8px; overflow: hidden; box-shadow: 0 1px 2px 0 rgba(60,64,67,.3), 0 1px 3px 1px rgba(60,64,67,.15); }
         .route-summary { background: white; padding: 16px 20px; border-bottom: 1px solid #e8eaed; }
         .route-summary h3 { margin-bottom: 12px; color: #202124; font-weight: 400; font-size: 18px; }
         .route-summary p { margin-bottom: 6px; color: #5f6368; font-size: 13px; }
 
         /* Pub Cards */
         .pub-list { display: flex; flex-direction: column; }
-        .pub-card {
-            background: white;
-            border-bottom: 1px solid #e8eaed;
-            padding: 16px 20px;
-            cursor: pointer;
-        }
+        .pub-card { background: white; border-bottom: 1px solid #e8eaed; padding: 16px 20px; cursor: pointer; border-left: 4px solid transparent; }
         .pub-card:hover { background: #f8f9fa; }
         
-        /* Card Categories */
-        .pub-card.priority { border-left: 4px solid #fbbc04; background: #fffcf5; }
-        .pub-card.sports { border-left: 4px solid #34a853; background: #f0f9f4; }
-        .pub-card.outdoor { border-left: 4px solid #1a73e8; background: #e8f0fe; }
-        .pub-card.afternoontea { border-left: 4px solid #ea4335; background: #fce8e6; }
-        .pub-card.happyhour { border-left: 4px solid #fbbc04; background: #fef7e0; }
-        .pub-card.dogfriendly { border-left: 4px solid #9334e6; background: #f3e8ff; }
+        /* Categories */
+        .pub-card.priority { border-left-color: #fbbc04; }
+        .pub-card.sports { border-left-color: #34a853; }
+        .pub-card.outdoor { border-left-color: #1a73e8; }
+        .pub-card.afternoontea { border-left-color: #ea4335; }
+        .pub-card.happyhour { border-left-color: #fbbc04; }
+        .pub-card.dogfriendly { border-left-color: #9334e6; }
 
         .pub-title { font-size: 16px; font-weight: 400; color: #1a73e8; margin-bottom: 4px; }
-        .pub-badges { display: flex; gap: 4px; margin-bottom: 6px; flex-wrap: wrap; }
-        
-        .badge { padding: 2px 8px; border-radius: 12px; font-size: 11px; font-weight: 500; }
+        .badge { padding: 2px 8px; border-radius: 12px; font-size: 11px; font-weight: 500; margin-right: 4px; display: inline-block; margin-bottom: 4px;}
         .badge-priority { background: #fef7e0; color: #b06000; }
         .badge-sports { background: #e6f4ea; color: #137333; }
         .badge-outdoor { background: #e8f0fe; color: #1967d2; }
@@ -120,37 +61,19 @@
         .badge-happyhour { background: #fef7e0; color: #b06000; }
         .badge-dogfriendly { background: #f3e8ff; color: #7e22ce; }
 
-        .pub-rating { display: flex; align-items: center; gap: 4px; font-size: 13px; color: #70757a; }
-        .stars { color: #fbbc04; }
         .pub-address { color: #5f6368; font-size: 13px; margin-bottom: 8px; }
-        .pub-description { color: #3c4043; font-size: 13px; line-height: 1.6; margin-bottom: 12px; }
-
-        .btn { padding: 8px 16px; border: 1px solid #dadce0; border-radius: 4px; cursor: pointer; font-size: 13px; font-weight: 500; background: white; color: #1a73e8; margin-right: 8px; }
-        .btn-primary { background: #1a73e8; color: white; border: none; }
-
-        #map { height: 100%; width: 100%; }
 
         /* Modal */
         .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1000; }
         .modal-content { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background: white; padding: 30px; border-radius: 12px; max-width: 500px; width: 90%; max-height: 80vh; overflow-y: auto; }
-        .modal-title { font-size: 1.5rem; color: #202124; font-weight: 400; margin-bottom: 20px; }
         .close { float: right; font-size: 28px; cursor: pointer; color: #5f6368; }
+        .btn-primary { background: #1a73e8; color: white; border: none; padding: 8px 16px; border-radius: 4px; text-decoration: none; display: inline-block; }
         
-        .error { color: #d93025; background: #fce8e6; padding: 16px 20px; margin: 16px 20px; }
+        .error { color: #d93025; background: #fce8e6; padding: 16px 20px; }
         .loading { text-align: center; padding: 32px 20px; color: #5f6368; }
-
-        /* Google Autocomplete Styling */
-        .pac-container {
-            font-family: 'Google Sans', 'Roboto', Arial, sans-serif;
-            border-radius: 8px;
-            margin-top: 4px;
-            box-shadow: 0 2px 6px rgba(0,0,0,0.3);
-            border: none;
-        }
-        .pac-item { padding: 10px; cursor: pointer; border-top: 1px solid #e8eaed; }
-        .pac-item:hover { background-color: #f8f9fa; }
-        .pac-item-query { font-size: 14px; color: #202124; }
-        .pac-matched { font-weight: 600; }
+        
+        /* Autocomplete */
+        .pac-container { z-index: 10000 !important; font-family: 'Google Sans', sans-serif; }
     </style>
 </head>
 <body>
@@ -163,16 +86,11 @@
                 <span style="font-size: 20px; color: #5f6368;">Maps</span>
             </div>
             <div class="app-title">| Pub Crawl Planner</div>
-            <div id="api-status" style="margin-left: 20px; color: #5f6368; font-size: 14px;">
-                Connecting to Google Maps...
-            </div>
+            <div id="api-status" style="margin-left: 20px; color: #5f6368; font-size: 14px;">Connecting...</div>
         </div>
-        
         <div style="display: flex; align-items: center; gap: 12px;">
             <span id="user-email" style="color: #5f6368; font-size: 14px;"></span>
-            <button onclick="signOut()" style="background: #ea4335; color: white; border: none; padding: 10px 20px; border-radius: 4px; cursor: pointer; font-size: 14px; font-weight: 500; box-shadow: 0 1px 3px rgba(0,0,0,0.2);">
-                Sign Out
-            </button>
+            <button onclick="signOut()" style="background: #ea4335; color: white; border: none; padding: 10px 20px; border-radius: 4px; cursor: pointer;">Sign Out</button>
         </div>
     </div>
 
@@ -195,7 +113,6 @@
                             <option value="20">20 stops</option>
                         </select>
                     </div>
-                    
                     <div class="form-group">
                         <label>Venue type</label>
                         <select name="historic-filter" required>
@@ -222,7 +139,6 @@
                             <option value="50000">50 km</option>
                         </select>
                     </div>
-
                     <div class="form-group">
                         <label>Starting distance from location</label>
                         <select name="starting-radius" required>
@@ -243,7 +159,6 @@
                             <option value="4.5">4.5+</option>
                         </select>
                     </div>
-
                     <div class="form-group">
                         <label>Opening hours</label>
                         <select name="open-now">
@@ -262,7 +177,6 @@
                 <div class="route-summary" id="route-summary"></div>
                 <div class="pub-list" id="pub-list"></div>
             </div>
-            
             <div class="results-map">
                 <div id="map"></div>
             </div>
@@ -284,7 +198,6 @@
         let googleMapsLoaded = false;
         let currentPubs = [];
         let currentRouteData = null;
-        let apiKey = '';
 
         function initializeGoogleMaps() {
             try {
@@ -292,10 +205,7 @@
                 directionsService = new google.maps.DirectionsService();
                 directionsRenderer = new google.maps.DirectionsRenderer({
                     suppressMarkers: true,
-                    polylineOptions: {
-                        strokeColor: '#4285f4',
-                        strokeWeight: 5
-                    }
+                    polylineOptions: { strokeColor: '#4285f4', strokeWeight: 5 }
                 });
                 console.log('Google Maps services initialized');
             } catch (error) {
@@ -303,40 +213,31 @@
             }
         }
 
-        // MOVED OUTSIDE of initializeGoogleMaps to be globally accessible
-function initializeAutocomplete() {
-    const locationInput = document.querySelector('input[name="location"]');
-    
-    if (!locationInput) {
-        console.error('Location input not found');
-        return;
-    }
-    
-    // Create autocomplete object WITHOUT country restrictions
-    const autocomplete = new google.maps.places.Autocomplete(locationInput, {
-        types: ['geocode', 'establishment'],
-        // componentRestrictions: { country: 'gb' }  <-- REMOVED THIS LINE
-    });
-    
-    // When user selects a place from dropdown
-    autocomplete.addListener('place_changed', function() {
-        const place = autocomplete.getPlace();
-        
-        if (place.geometry) {
-            console.log('Autocomplete selected:', place.formatted_address);
+        // GLOBAL AUTOCOMPLETE INIT
+        function initializeAutocomplete() {
+            const locationInput = document.querySelector('input[name="location"]');
+            if (!locationInput) return;
+            
+            // Global Autocomplete (No country restrictions)
+            const autocomplete = new google.maps.places.Autocomplete(locationInput, {
+                types: ['geocode', 'establishment']
+            });
+            
+            autocomplete.addListener('place_changed', function() {
+                const place = autocomplete.getPlace();
+                if (place.geometry) {
+                    console.log('Autocomplete selected:', place.formatted_address);
+                }
+            });
+            console.log('✓ Autocomplete initialized (Global)');
         }
-    });
-    
-    console.log('✓ Autocomplete initialized (Global)');
-}
 
-async function searchPubs(location, numPubs, historicFilter, maxDistance, minRating, openNow, startingRadius) {
+        async function searchPubs(location, numPubs, historicFilter, maxDistance, minRating, openNow, startingRadius) {
             showLoading();
             window.currentFilterType = historicFilter;
 
             try {
                 let center, pubs;
-                
                 // 1. GENERATE CACHE KEY
                 const cacheKey = `pub_cache_${btoa(location.toLowerCase() + '_' + historicFilter)}`;
                 
@@ -347,15 +248,10 @@ async function searchPubs(location, numPubs, historicFilter, maxDistance, minRat
                 if (cachedData) {
                     try {
                         const parsed = JSON.parse(cachedData);
-                        
-                        // Check expiry (24 hours)
                         if (Date.now() - parsed.timestamp < 86400000) {
                             console.log('✓ Loading from Local Storage...');
                             center = parsed.center;
-                            
-                            // --- REHYDRATION FIX ---
-                            // We must convert the plain JSON coordinates back into Google Maps objects
-                            // so that functions like .lat() and geometry calculations work again.
+                            // REHYDRATE GOOGLE MAPS OBJECTS
                             pubs = parsed.pubs.map(pub => {
                                 return {
                                     ...pub,
@@ -367,29 +263,21 @@ async function searchPubs(location, numPubs, historicFilter, maxDistance, minRat
                                     }
                                 };
                             });
-                            // -----------------------
-                            
                             loadedFromCache = true;
                         } else {
-                            console.log('Cache expired.');
                             localStorage.removeItem(cacheKey);
                         }
                     } catch (e) {
-                        console.error('Cache error:', e);
                         localStorage.removeItem(cacheKey);
                     }
                 }
 
-                // 3. FETCH FROM API (If not in cache)
+                // 3. FETCH FROM API IF NOT CACHED
                 if (!loadedFromCache) {
-                    console.log('Fetching fresh data from API...');
                     center = await geocodeLocation(location);
-                    
                     const startRadius = parseInt(startingRadius) || 1000;
-                    pubs = await findPubs(center, 1000, historicFilter);
+                    pubs = await findPubs(center, 1000, historicFilter); // Baseline fetch
                     
-                    // Save to Local Storage
-                    // Note: Google Maps LatLng objects serialize automatically to {lat: x, lng: y}
                     localStorage.setItem(cacheKey, JSON.stringify({
                         center: center,
                         pubs: pubs,
@@ -397,36 +285,31 @@ async function searchPubs(location, numPubs, historicFilter, maxDistance, minRat
                     }));
                 }
 
-                // --- REST OF THE LOGIC REMAINS THE SAME ---
-                
-                // Filter the pubs
+                // FILTERING
                 const filteredPubs = filterPubs(pubs, historicFilter, minRating, openNow);
-                
                 if (filteredPubs.length === 0) {
-                    showError(`No venues found in this area. Try a different location or adjust your filters.`);
+                    showError(`No venues found. Try a different location.`);
                     return;
                 }
 
-                // Sort ALL filtered pubs by distance
-                const allPubsSorted = filteredPubs
-                    .map(pub => {
-                        const distance = google.maps.geometry.spherical.computeDistanceBetween(
-                            new google.maps.LatLng(center.lat, center.lng),
-                            pub.geometry.location
-                        );
-                        return { ...pub, distance };
-                    })
-                    .sort((a, b) => a.distance - b.distance);
+                // SORT BY DISTANCE
+                const allPubsSorted = filteredPubs.map(pub => {
+                    const distance = google.maps.geometry.spherical.computeDistanceBetween(
+                        new google.maps.LatLng(center.lat, center.lng),
+                        pub.geometry.location
+                    );
+                    return { ...pub, distance };
+                }).sort((a, b) => a.distance - b.distance);
 
                 const startRadius = parseInt(startingRadius) || 1000;
                 const firstPub = allPubsSorted.find(pub => pub.distance <= startRadius);
 
                 if (!firstPub) {
-                    showError(`No venues found within ${(startRadius / 1000).toFixed(1)}km of your location.`);
+                    showError(`No venues found within ${(startRadius / 1000).toFixed(1)}km of start.`);
                     return;
                 }
 
-                // Route logic
+                // ROUTE LOGIC
                 const pubsForRoute = allPubsSorted.filter(pub => pub.distance <= maxDistance);
                 const sortedPubs = [firstPub, ...pubsForRoute.filter(p => p.place_id !== firstPub.place_id)];
                 
@@ -443,9 +326,7 @@ async function searchPubs(location, numPubs, historicFilter, maxDistance, minRat
                     const directionsResult = await calculateDirections(optimized);
                     
                     if (directionsResult && directionsResult.routes && directionsResult.routes[0]) {
-                        const routeDistance = directionsResult.routes[0].legs.reduce(
-                            (sum, leg) => sum + leg.distance.value, 0
-                        );
+                        const routeDistance = directionsResult.routes[0].legs.reduce((sum, leg) => sum + leg.distance.value, 0);
                         
                         if (routeDistance < bestRouteDistance) {
                             bestRouteDistance = routeDistance;
@@ -455,11 +336,8 @@ async function searchPubs(location, numPubs, historicFilter, maxDistance, minRat
                         
                         if (routeDistance <= maxDistance) {
                             currentRouteData = directionsResult;
-                            if (numToTry < requestedNum) {
-                                window.insufficientPubs = { found: numToTry, requested: requestedNum, reason: 'distance' };
-                            } else {
-                                window.insufficientPubs = null;
-                            }
+                            window.insufficientPubs = (numToTry < requestedNum) ? 
+                                { found: numToTry, requested: requestedNum, reason: 'distance' } : null;
                             displayResults(optimized);
                             return;
                         }
@@ -467,211 +345,85 @@ async function searchPubs(location, numPubs, historicFilter, maxDistance, minRat
                 }
 
                  if (bestRoutePubs && bestRoutePubs.length >= 2) {
-                    window.insufficientPubs = {
-                        found: bestRoutePubs.length,
-                        requested: requestedNum,
-                        reason: 'distance',
-                        actualDistance: bestRouteDistance,
-                        maxDistance: maxDistance
-                    };
+                    window.insufficientPubs = { found: bestRoutePubs.length, requested: requestedNum, reason: 'distance' };
                     currentRouteData = bestRoute;
                     displayResults(bestRoutePubs);
                  } else {
-                     showError('Could not create a walking route in this area. Try increasing the maximum walking distance.');
+                     showError('Could not create a walking route in this area. Try increasing max walking distance.');
                  }
                 
             } catch (error) {
                 console.error('Search error:', error);
-                // Clear cache on error to prevent getting stuck
                 if (error.message.includes('not a function')) localStorage.clear();
                 showError('Search failed: ' + error.message);
             }
         }
 
-                // ---------------------------------------------------------
-                // The rest of the logic (Filtering & Routing) runs locally
-                // using the data we just got (either from Cache or API).
-                // ---------------------------------------------------------
-
-                const startRadius = parseInt(startingRadius) || 1000;
-                
-                // Filter the pubs (Client-side)
-                const filteredPubs = filterPubs(pubs, historicFilter, minRating, openNow);
-                
-                if (filteredPubs.length === 0) {
-                    showError(`No venues found in this area. Try a different location or adjust your filters.`);
-                    return;
-                }
-
-                // Sort ALL filtered pubs by distance from location
-                const allPubsSorted = filteredPubs
-                    .map(pub => {
-                        const distance = google.maps.geometry.spherical.computeDistanceBetween(
-                            new google.maps.LatLng(center.lat, center.lng),
-                            pub.geometry.location
-                        );
-                        return { ...pub, distance };
-                    })
-                    .sort((a, b) => a.distance - b.distance);
-
-                // Find the first pub within the starting radius
-                const firstPub = allPubsSorted.find(pub => pub.distance <= startRadius);
-
-                if (!firstPub) {
-                    showError(`No venues found within ${(startRadius / 1000).toFixed(1)}km of your location. Try increasing the starting distance.`);
-                    return;
-                }
-
-                // Route logic
-                const pubsForRoute = allPubsSorted.filter(pub => pub.distance <= maxDistance);
-                // Ensure we don't duplicate the first pub if it's also in the general list
-                const sortedPubs = [firstPub, ...pubsForRoute.filter(p => p.place_id !== firstPub.place_id)];
-                
-                let bestRoute = null;
-                let bestRouteDistance = Infinity;
-                let bestRoutePubs = null;
-                
-                const requestedNum = parseInt(numPubs);
-                const maxPubsToTry = Math.min(requestedNum, sortedPubs.length);
-                
-                // We iterate downwards to find the best route that fits the distance
-                for (let numToTry = maxPubsToTry; numToTry >= 2; numToTry--) {
-                    const candidatePubs = sortedPubs.slice(0, numToTry);
-                    const optimized = optimizeRoute(candidatePubs, center);
-                    
-                    // NOTE: calculatedDirections calls the Directions API. 
-                    // This is "cheap" ($0.005) compared to Places ($0.03+), so we run it live 
-                    // to ensure the route is valid for the current selection.
-                    const directionsResult = await calculateDirections(optimized);
-                    
-                    if (directionsResult && directionsResult.routes && directionsResult.routes[0]) {
-                        const routeDistance = directionsResult.routes[0].legs.reduce(
-                            (sum, leg) => sum + leg.distance.value, 0
-                        );
-                        
-                        if (routeDistance < bestRouteDistance) {
-                            bestRouteDistance = routeDistance;
-                            bestRoutePubs = optimized;
-                            bestRoute = directionsResult;
-                        }
-                        
-                        if (routeDistance <= maxDistance) {
-                            currentRouteData = directionsResult;
-                            
-                            if (numToTry < requestedNum) {
-                                window.insufficientPubs = { found: numToTry, requested: requestedNum, reason: 'distance' };
-                            } else {
-                                window.insufficientPubs = null;
-                            }
-                            
-                            displayResults(optimized);
-                            return;
-                        }
-                    }
-                }
-
-                 if (bestRoutePubs && bestRoutePubs.length >= 2) {
-                    window.insufficientPubs = {
-                        found: bestRoutePubs.length,
-                        requested: requestedNum,
-                        reason: 'distance',
-                        actualDistance: bestRouteDistance,
-                        maxDistance: maxDistance
-                    };
-                    currentRouteData = bestRoute;
-                    displayResults(bestRoutePubs);
-                 } else {
-                     showError('Could not create a walking route in this area. Try increasing the maximum walking distance.');
-                 }
-                
-            } catch (error) {
-                console.error('Search error:', error);
-                // If cache fails, we might want to clear it
-                if (error.name === 'SyntaxError') localStorage.clear();
-                showError('Search failed: ' + error.message);
-            }
-        }
-
         async function geocodeLocation(location) {
-            try {
-                const user = firebase.auth().currentUser;
-                if (!user) throw new Error('User not authenticated');
-                const token = await user.getIdToken();
-                
-                const response = await fetch('https://pub-crawler-backend.vercel.app/api/geocode', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-                    body: JSON.stringify({ address: location })
-                });
-                
-                if (!response.ok) throw new Error('Geocoding failed');
-                const data = await response.json();
-                
-                if (data.status === 'OK' && data.results && data.results.length > 0) {
-                    const loc = data.results[0].geometry.location;
-                    return { lat: loc.lat, lng: loc.lng };
-                } else {
-                    throw new Error('Location not found');
-                }
-            } catch (error) {
-                console.error('Geocoding error:', error);
-                throw error;
+            const user = firebase.auth().currentUser;
+            if (!user) throw new Error('User not authenticated');
+            const token = await user.getIdToken();
+            const response = await fetch('https://pub-crawler-backend.vercel.app/api/geocode', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+                body: JSON.stringify({ address: location })
+            });
+            if (!response.ok) throw new Error('Geocoding failed');
+            const data = await response.json();
+            if (data.status === 'OK' && data.results && data.results.length > 0) {
+                const loc = data.results[0].geometry.location;
+                return { lat: loc.lat, lng: loc.lng };
             }
+            throw new Error('Location not found');
         }
 
         async function findPubs(center, maxDistance, historicFilter) {
-            try {
-                const user = firebase.auth().currentUser;
-                if (!user) throw new Error('User not authenticated');
-                const token = await user.getIdToken();
-                
-                let textQuery = 'pub';
-                if (historicFilter === 'sports') textQuery = 'sports bar OR pub';
-                else if (historicFilter === 'afternoontea') textQuery = 'afternoon tea OR tea room OR cafe';
-                else if (historicFilter === 'happyhour') textQuery = 'bar OR pub';
-                else if (historicFilter === 'outdoor') textQuery = 'pub OR bar';
-                else if (historicFilter === 'dogfriendly') textQuery = 'dog friendly pub OR pet friendly pub';
-                else if (historicFilter === 'priority') textQuery = 'historic pub OR traditional pub';
-                
-                const response = await fetch('https://pub-crawler-backend.vercel.app/api/search-places', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-                    body: JSON.stringify({
-                        location: `${center.lat},${center.lng}`,
-                        radius: maxDistance,
-                        type: 'pub',
-                        keyword: textQuery
-                    })
-                });
-                
-                const data = await response.json();
-                if (!data.places || data.places.length === 0) return [];
-                
-                return data.places.map(place => ({
-                    place_id: place.id,
-                    name: place.displayName?.text || 'Unknown',
-                    vicinity: place.formattedAddress || '',
-                    rating: place.rating || 0,
-                    user_ratings_total: place.userRatingCount || 0,
-                    types: place.types || [],
-                    geometry: { location: new google.maps.LatLng(place.location?.latitude || 0, place.location?.longitude || 0) },
-                    opening_hours: null, // Basic data doesn't include hours
-                    editorial_summary: place.editorialSummary?.text || '',
-                    ai_summary: '',
-                    goodForWatchingSports: place.goodForWatchingSports || false,
-                    outdoorSeating: place.outdoorSeating || false,
-                    servesAfternoonTea: place.servesAfternoonTea || false,
-                    allowsDogs: place.allowsDogs || false
-                }));
-                
-            } catch (error) {
-                throw new Error('Failed to search for pubs: ' + error.message);
-            }
+            const user = firebase.auth().currentUser;
+            if (!user) throw new Error('User not authenticated');
+            const token = await user.getIdToken();
+            
+            let textQuery = 'pub';
+            if (historicFilter === 'sports') textQuery = 'sports bar OR pub';
+            else if (historicFilter === 'afternoontea') textQuery = 'afternoon tea OR tea room OR cafe';
+            else if (historicFilter === 'happyhour') textQuery = 'bar OR pub';
+            else if (historicFilter === 'outdoor') textQuery = 'pub OR bar';
+            else if (historicFilter === 'dogfriendly') textQuery = 'dog friendly pub OR pet friendly pub';
+            else if (historicFilter === 'priority') textQuery = 'historic pub OR traditional pub';
+            
+            const response = await fetch('https://pub-crawler-backend.vercel.app/api/search-places', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+                body: JSON.stringify({
+                    location: `${center.lat},${center.lng}`,
+                    radius: maxDistance,
+                    type: 'pub',
+                    keyword: textQuery
+                })
+            });
+            const data = await response.json();
+            if (!data.places) return [];
+            
+            return data.places.map(place => ({
+                place_id: place.id,
+                name: place.displayName?.text || 'Unknown',
+                vicinity: place.formattedAddress || '',
+                rating: place.rating || 0,
+                user_ratings_total: place.userRatingCount || 0,
+                types: place.types || [],
+                geometry: { location: new google.maps.LatLng(place.location?.latitude, place.location?.longitude) },
+                opening_hours: null,
+                editorial_summary: place.editorialSummary?.text || '',
+                ai_summary: '',
+                goodForWatchingSports: place.goodForWatchingSports || false,
+                outdoorSeating: place.outdoorSeating || false,
+                servesAfternoonTea: place.servesAfternoonTea || false,
+                allowsDogs: place.allowsDogs || false
+            }));
         }
 
         function filterPubs(pubs, historicFilter, minRating, openNow) {
             const historicKeywords = ['historic', 'old', 'traditional', 'victorian', 'heritage', 'ancient', 'inn', 'tavern', 'tudor', 'medieval'];
-            const sportsKeywords = ['sports', 'game', 'screen', 'tv'];
+            const sportsKeywords = ['sports', 'game', 'screen', 'tv', 'match'];
             const outdoorKeywords = ['beer garden', 'garden', 'outdoor', 'terrace', 'patio'];
             const afternoonTeaKeywords = ['afternoon tea', 'high tea', 'tea room', 'scones'];
             const happyHourKeywords = ['happy hour', 'drink specials', '2 for 1', 'cocktail hour'];
@@ -685,71 +437,49 @@ async function searchPubs(location, numPubs, historicFilter, maxDistance, minRat
                 const combined = name + ' ' + summary;
                 
                 if (historicFilter === 'afternoontea') {
-                    const hasKeyword = afternoonTeaKeywords.some(kw => combined.includes(kw));
-                    if (!pub.servesAfternoonTea && !hasKeyword) return false;
+                    if (!pub.servesAfternoonTea && !afternoonTeaKeywords.some(kw => combined.includes(kw))) return false;
                 } else if (historicFilter === 'happyhour') {
-                    const hasKeyword = happyHourKeywords.some(kw => combined.includes(kw));
-                    if (!hasKeyword) return false;
+                    if (!happyHourKeywords.some(kw => combined.includes(kw))) return false;
                 } else if (historicFilter === 'dogfriendly') {
-                    const hasKeyword = dogFriendlyKeywords.some(kw => combined.includes(kw));
-                    if (!pub.allowsDogs && !hasKeyword) return false;
+                    if (!pub.allowsDogs && !dogFriendlyKeywords.some(kw => combined.includes(kw))) return false;
                 } else if (historicFilter === 'outdoor') {
-                    const hasKeyword = outdoorKeywords.some(kw => combined.includes(kw));
-                    if (!pub.outdoorSeating && !hasKeyword) return false;
+                    if (!pub.outdoorSeating && !outdoorKeywords.some(kw => combined.includes(kw))) return false;
                 } else if (historicFilter === 'sports') {
-                    const hasKeyword = sportsKeywords.some(kw => combined.includes(kw));
-                    if (!pub.goodForWatchingSports && !hasKeyword) return false;
+                    if (!pub.goodForWatchingSports && !sportsKeywords.some(kw => combined.includes(kw))) return false;
                 } else if (historicFilter === 'priority') {
-                    const hasKeyword = historicKeywords.some(kw => combined.includes(kw));
-                    if (!hasKeyword) return false;
+                    if (!historicKeywords.some(kw => combined.includes(kw))) return false;
                 }
-                
                 return true;
             });
         }
 
         function optimizeRoute(pubs, originalLocation) {
             if (pubs.length === 0) return [];
-            
-            // Find closest to start
-            let startPubIndex = 0;
-            let minDistToStart = Infinity;
+            let startPubIndex = 0, minDistToStart = Infinity;
             
             pubs.forEach((pub, idx) => {
                 const dist = google.maps.geometry.spherical.computeDistanceBetween(
                     new google.maps.LatLng(originalLocation.lat, originalLocation.lng),
                     pub.geometry.location
                 );
-                if (dist < minDistToStart) {
-                    minDistToStart = dist;
-                    startPubIndex = idx;
-                }
+                if (dist < minDistToStart) { minDistToStart = dist; startPubIndex = idx; }
             });
             
             const ordered = [];
             const remaining = [...pubs];
             const startPub = remaining.splice(startPubIndex, 1)[0];
             ordered.push(startPub);
-            
             let current = { lat: startPub.geometry.location.lat(), lng: startPub.geometry.location.lng() };
             
             while (remaining.length > 0) {
-                let nearest = 0;
-                let minDist = Infinity;
-                
+                let nearest = 0, minDist = Infinity;
                 remaining.forEach((pub, idx) => {
                     const loc = pub.geometry.location;
                     const dist = google.maps.geometry.spherical.computeDistanceBetween(
-                        new google.maps.LatLng(current.lat, current.lng),
-                        loc
+                        new google.maps.LatLng(current.lat, current.lng), loc
                     );
-                    
-                    if (dist < minDist) {
-                        minDist = dist;
-                        nearest = idx;
-                    }
+                    if (dist < minDist) { minDist = dist; nearest = idx; }
                 });
-                
                 const pub = remaining.splice(nearest, 1)[0];
                 ordered.push(pub);
                 current = { lat: pub.geometry.location.lat(), lng: pub.geometry.location.lng() };
@@ -758,266 +488,166 @@ async function searchPubs(location, numPubs, historicFilter, maxDistance, minRat
         }
 
         function calculateDirections(pubs) {
-            return new Promise((resolve, reject) => {
-                if (pubs.length < 2) {
-                    resolve();
-                    return;
-                }
-                
-                const waypoints = pubs.slice(1, -1).map(pub => ({
-                    location: pub.geometry.location,
-                    stopover: true
-                }));
-                
+            return new Promise((resolve) => {
+                if (pubs.length < 2) { resolve(); return; }
+                const waypoints = pubs.slice(1, -1).map(pub => ({ location: pub.geometry.location, stopover: true }));
                 const request = {
                     origin: pubs[0].geometry.location,
                     destination: pubs[pubs.length - 1].geometry.location,
                     waypoints: waypoints,
                     travelMode: 'WALKING'
                 };
-                
                 directionsService.route(request, (result, status) => {
-                    if (status === 'OK') {
-                        resolve(result);
-                    } else {
-                        console.error('Directions failed:', status);
-                        resolve(null);
-                    }
+                    resolve(status === 'OK' ? result : null);
                 });
             });
         }
 
-function displaySummary(pubs) {
+        function displayResults(pubs) {
+            const bounds = new google.maps.LatLngBounds();
+            pubs.forEach(pub => bounds.extend(pub.geometry.location));
+            map = new google.maps.Map(document.getElementById('map'), {
+                zoom: 14, center: bounds.getCenter(), zoomControl: true, mapTypeControl: false, streetViewControl: false, fullscreenControl: true
+            });
+            map.fitBounds(bounds);
+            if (currentRouteData) { directionsRenderer.setMap(map); directionsRenderer.setDirections(currentRouteData); }
+            
+            pubs.forEach((pub, index) => {
+                const marker = new google.maps.Marker({
+                    position: pub.geometry.location, map: map,
+                    label: { text: (index + 1).toString(), color: 'white', fontWeight: 'bold' },
+                    title: pub.name
+                });
+                marker.addListener('click', () => showPubDetails(pub));
+            });
+            currentPubs = pubs;
+            displaySummary(pubs);
+            displayPubList(pubs, window.currentFilterType || 'all');
+            document.getElementById('results-layout').style.display = 'block';
+            setTimeout(() => document.getElementById('results-layout').scrollIntoView({ behavior: 'smooth' }), 100);
+        }
+
+        function displaySummary(pubs) {
             const summary = document.getElementById('route-summary');
             const totalDistance = currentRouteData ? currentRouteData.routes[0].legs.reduce((sum, leg) => sum + leg.distance.value, 0) : 0;
             const totalDuration = currentRouteData ? currentRouteData.routes[0].legs.reduce((sum, leg) => sum + leg.duration.value, 0) : 0;
             const routeKm = (totalDistance / 1000).toFixed(1);
 
-            // --- NEW: CALORIE & FITNESS LOGIC ---
-            // Assumptions: 
-            // 1 Drink = ~250 calories (Pint of beer / Large glass of wine)
-            // Walking Burn = ~60 calories per km (Average adult)
+            // CALORIE LOGIC
             const AVG_CALORIES_PER_DRINK = 250; 
             const CALORIES_BURNED_PER_KM = 60; 
-            
             const totalDrinksCalories = pubs.length * AVG_CALORIES_PER_DRINK;
             const kmNeededToBurn = (totalDrinksCalories / CALORIES_BURNED_PER_KM).toFixed(1);
-            
             const difference = (parseFloat(routeKm) - parseFloat(kmNeededToBurn)).toFixed(1);
             const isSurplus = parseFloat(difference) >= 0;
 
             let calorieHtml = `
                 <div style="background: #f1f3f4; border-left: 4px solid #5f6368; padding: 12px; margin: 12px 0; border-radius: 4px;">
                     <strong style="color: #202124;">🍺 Calorie Challenge</strong>
-                    <p style="font-size: 13px; color: #3c4043; margin-top: 6px; line-height: 1.5;">
-                        <strong>${pubs.length} drinks</strong> = ~${totalDrinksCalories} calories.
-                        <br>You need to walk <strong>${kmNeededToBurn}km</strong> to burn this off.
+                    <p style="font-size: 13px; color: #3c4043; margin-top: 6px;">
+                        <strong>${pubs.length} drinks</strong> = ~${totalDrinksCalories} cal.
+                        Need to walk <strong>${kmNeededToBurn}km</strong> to burn this.
                     </p>
+                    <p style="font-size: 13px; color: ${isSurplus ? '#137333' : '#ea4335'}; margin-top: 6px; font-weight: 500;">
+                        ${isSurplus ? `✅ This route is ${routeKm}km, so you'll burn it all!` : `⚠️ This route is only ${routeKm}km. You'll have "liquid energy" left!`}
+                    </p>
+                </div>
             `;
-
-            if (isSurplus) {
-                calorieHtml += `
-                    <p style="font-size: 13px; color: #137333; margin-top: 6px; font-weight: 500;">
-                        ✅ Good news! This route is ${routeKm}km, so you'll burn everything off plus extra!
-                    </p>
-                </div>`;
-            } else {
-                calorieHtml += `
-                    <p style="font-size: 13px; color: #ea4335; margin-top: 6px; font-weight: 500;">
-                        ⚠️ This route is only ${routeKm}km. You'll still have ${Math.abs(difference)}km worth of "liquid energy" left!
-                    </p>
-                </div>`;
-            }
-            // -------------------------------------
-
+            
             let warningHtml = '';
             if (window.insufficientPubs) {
                 const info = window.insufficientPubs;
                 warningHtml = `<div style="background: #fef7e0; border-left: 4px solid #fbbc04; padding: 12px; margin-top: 12px; border-radius: 4px;">
                     <strong style="color: #b06000;">⚠️ Adjusted Route</strong>
-                    <p style="font-size: 13px; color: #5f6368; margin-top: 8px;">
-                        Found ${info.found} venue${info.found!==1?'s':''} that fit your distance criteria (you asked for ${info.requested}).
-                    </p>
+                    <p style="font-size: 13px; color: #5f6368; margin-top: 8px;">Found ${info.found} venues (requested ${info.requested}).</p>
                 </div>`;
             }
 
-            summary.innerHTML = `
-                <h3>Your Pub Crawl Route</h3>
-                <p><strong>${pubs.length} stops</strong></p>
-                <p>${routeKm} km walking distance</p>
-                <p>~${Math.round(totalDuration / 60)} minutes walking time</p>
-                ${calorieHtml}
-                ${warningHtml}
-            `;
+            summary.innerHTML = `<h3>Your Route</h3><p><strong>${pubs.length} stops</strong> • ${routeKm} km • ~${Math.round(totalDuration / 60)} mins</p>${calorieHtml}${warningHtml}`;
         }
 
-function displayPubList(pubs, historicFilter) {
-        const list = document.getElementById('pub-list');
-        
-        // --- KEYWORD DEFINITIONS (Same as before) ---
-        const historicKeywords = ['historic', 'old', 'traditional', 'victorian', 'heritage', 'ancient', 'inn', 'tavern', 'tudor', 'medieval'];
-        const sportsKeywords = ['sports', 'game', 'screen', 'tv', 'match'];
-        const outdoorKeywords = ['beer garden', 'garden', 'outdoor', 'terrace', 'patio', 'rooftop'];
-        const afternoonTeaKeywords = ['afternoon tea', 'high tea', 'tea room', 'scones'];
-        const happyHourKeywords = ['happy hour', 'drink specials', '2 for 1', 'cocktail hour'];
-        const dogFriendlyKeywords = ['dog friendly', 'dogs welcome', 'pets allowed', 'dog bowl'];
+        function displayPubList(pubs, historicFilter) {
+            const list = document.getElementById('pub-list');
+            const historicKeywords = ['historic', 'old', 'traditional', 'victorian', 'heritage', 'ancient', 'inn', 'tavern', 'tudor', 'medieval'];
+            const sportsKeywords = ['sports', 'game', 'screen', 'tv', 'match'];
+            const outdoorKeywords = ['beer garden', 'garden', 'outdoor', 'terrace', 'patio', 'rooftop'];
+            const afternoonTeaKeywords = ['afternoon tea', 'high tea', 'tea room', 'scones'];
+            const happyHourKeywords = ['happy hour', 'drink specials', '2 for 1', 'cocktail hour'];
+            const dogFriendlyKeywords = ['dog friendly', 'dogs welcome', 'pets allowed', 'dog bowl'];
 
-        list.innerHTML = pubs.map((pub, index) => {
-            // --- 1. FILTER & BADGE LOGIC ---
-            const name = pub.name.toLowerCase();
-            const summary = (pub.editorial_summary || '').toLowerCase();
-            const combined = name + ' ' + summary;
+            list.innerHTML = pubs.map((pub, index) => {
+                const name = pub.name.toLowerCase();
+                const summary = (pub.editorial_summary || '').toLowerCase();
+                const combined = name + ' ' + summary;
+                const hasHistoric = historicKeywords.some(kw => combined.includes(kw));
+                const isSports = pub.goodForWatchingSports || sportsKeywords.some(kw => combined.includes(kw));
+                const hasOutdoor = pub.outdoorSeating || outdoorKeywords.some(kw => combined.includes(kw));
+                const hasTea = pub.servesAfternoonTea || afternoonTeaKeywords.some(kw => combined.includes(kw));
+                const hasHappyHour = happyHourKeywords.some(kw => combined.includes(kw));
+                const isDogFriendly = pub.allowsDogs || dogFriendlyKeywords.some(kw => combined.includes(kw));
 
-            // Check criteria matches
-            const hasHistoric = historicKeywords.some(kw => combined.includes(kw));
-            const isSports = pub.goodForWatchingSports || sportsKeywords.some(kw => combined.includes(kw));
-            const hasOutdoor = pub.outdoorSeating || outdoorKeywords.some(kw => combined.includes(kw));
-            const hasTea = pub.servesAfternoonTea || afternoonTeaKeywords.some(kw => combined.includes(kw));
-            const hasHappyHour = happyHourKeywords.some(kw => combined.includes(kw));
-            const isDogFriendly = pub.allowsDogs || dogFriendlyKeywords.some(kw => combined.includes(kw));
+                let badgesHTML = '<div style="margin-top:4px;">';
+                if (hasHistoric) badgesHTML += '<span class="badge badge-priority">🏛️ Historic</span>';
+                if (isSports) badgesHTML += '<span class="badge badge-sports">⚽ Sports</span>';
+                if (hasOutdoor) badgesHTML += '<span class="badge badge-outdoor">🌳 Garden</span>';
+                if (hasTea) badgesHTML += '<span class="badge badge-afternoontea">🫖 Tea</span>';
+                if (hasHappyHour) badgesHTML += '<span class="badge badge-happyhour">🍻 Deals</span>';
+                if (isDogFriendly) badgesHTML += '<span class="badge badge-dogfriendly">🐕 Dog Friendly</span>';
+                badgesHTML += '</div>';
 
-            // Generate Badge HTML
-            let badgesHTML = '<div class="pub-badges" style="margin-top: 4px;">';
-            if (hasHistoric) badgesHTML += '<span class="badge badge-priority">🏛️ Historic</span>';
-            if (isSports) badgesHTML += '<span class="badge badge-sports">⚽ Sports</span>';
-            if (hasOutdoor) badgesHTML += '<span class="badge badge-outdoor">🌳 Garden</span>';
-            if (hasTea) badgesHTML += '<span class="badge badge-afternoontea">🫖 Tea</span>';
-            if (hasHappyHour) badgesHTML += '<span class="badge badge-happyhour">🍻 Deals</span>';
-            if (isDogFriendly) badgesHTML += '<span class="badge badge-dogfriendly">🐕 Dog Friendly</span>';
-            badgesHTML += '</div>';
+                let priorityClass = '';
+                if (historicFilter === 'priority' && hasHistoric) priorityClass = 'priority';
+                else if (historicFilter === 'sports' && isSports) priorityClass = 'sports';
+                else if (historicFilter === 'outdoor' && hasOutdoor) priorityClass = 'outdoor';
+                else if (historicFilter === 'dogfriendly' && isDogFriendly) priorityClass = 'dogfriendly';
 
-            const badgesDisplay = (hasHistoric||isSports||hasOutdoor||hasTea||hasHappyHour||isDogFriendly) ? badgesHTML : '';
-
-            // Color coding border based on filter selection
-            let priorityClass = '';
-            if (historicFilter === 'priority' && hasHistoric) priorityClass = 'priority';
-            else if (historicFilter === 'sports' && isSports) priorityClass = 'sports';
-            else if (historicFilter === 'outdoor' && hasOutdoor) priorityClass = 'outdoor';
-            else if (historicFilter === 'dogfriendly' && isDogFriendly) priorityClass = 'dogfriendly';
-
-
-            // --- 2. DISTANCE & ROUTE DISPLAY (NEW) ---
-            let distanceHtml = '';
-            if (index === 0) {
-                // First pub: Show distance from Search Location
-                const distKm = (pub.distance / 1000).toFixed(2);
-                distanceHtml = `
-                    <div style="margin-top: 8px; padding: 6px 0; border-top: 1px dashed #e8eaed; font-size: 13px; color: #1a73e8; display: flex; align-items: center; gap: 6px;">
-                        <span>📍</span> 
-                        <strong>Start Here</strong> 
-                        <span style="color: #70757a;">(~${distKm} km from search)</span>
-                    </div>`;
-            } else {
-                // Subsequent pubs: Show distance from previous pub (using Route Legs)
-                // Leg 0 matches path from Pub 1 -> Pub 2. So for Index 1, we use Leg 0.
-                if (window.currentRouteData && window.currentRouteData.routes[0] && window.currentRouteData.routes[0].legs[index - 1]) {
+                let distanceHtml = '';
+                if (index === 0) {
+                    const distKm = (pub.distance / 1000).toFixed(2);
+                    distanceHtml = `<div style="margin-top:8px;padding-top:6px;border-top:1px dashed #e8eaed;font-size:13px;color:#1a73e8;">📍 Start Here (~${distKm} km from search)</div>`;
+                } else if (window.currentRouteData && window.currentRouteData.routes[0] && window.currentRouteData.routes[0].legs[index - 1]) {
                     const leg = window.currentRouteData.routes[0].legs[index - 1];
-                    distanceHtml = `
-                        <div style="margin-top: 8px; padding: 6px 0; border-top: 1px dashed #e8eaed; font-size: 13px; color: #1a73e8; display: flex; align-items: center; gap: 6px;">
-                            <span>🚶</span> 
-                            <strong>Walk ${leg.distance.text}</strong> 
-                            <span style="color: #70757a;">(${leg.duration.text} from previous)</span>
-                        </div>`;
+                    distanceHtml = `<div style="margin-top:8px;padding-top:6px;border-top:1px dashed #e8eaed;font-size:13px;color:#1a73e8;">🚶 Walk ${leg.distance.text} (${leg.duration.text})</div>`;
                 }
-            }
 
+                const summaryText = pub.ai_summary || pub.editorial_summary;
+                const summaryHtml = summaryText ? `<div style="background:#f8f9fa;border-left:3px solid #1a73e8;padding:8px;margin-top:8px;border-radius:0 4px 4px 0;"><strong style="font-size:11px;color:#1a73e8;text-transform:uppercase;">✨ AI Summary</strong><p style="font-size:13px;color:#3c4043;margin-top:4px;">${summaryText}</p></div>` : '';
 
-            // --- 3. OPENING HOURS (NEW) ---
-            let hoursHtml = '';
-            if (pub.today_hours) {
-                hoursHtml = `<div style="font-size: 12px; color: #5f6368; margin-top: 4px;">🕒 ${pub.today_hours}</div>`;
-            } else if (pub.opening_hours) {
-                // Fallback to Open/Closed status if specific text is missing
-                const isOpen = pub.opening_hours.open_now;
-                const color = isOpen ? '#137333' : '#d93025'; // Green or Red
-                hoursHtml = `<div style="font-size: 12px; color: ${color}; margin-top: 4px; font-weight: 500;">
-                    ${isOpen ? '● Open Now' : '● Closed'}
-                </div>`;
-            }
-
-
-            // --- 4. AI SUMMARY (UPDATED UI) ---
-            const summaryText = pub.ai_summary || pub.editorial_summary;
-            const summaryHtml = summaryText ? `
-                <div style="background: #f8f9fa; border-left: 3px solid #1a73e8; padding: 10px; margin-top: 10px; border-radius: 0 4px 4px 0;">
-                    <strong style="font-size: 11px; color: #1a73e8; text-transform: uppercase; letter-spacing: 0.5px;">✨ AI Summary</strong>
-                    <p style="font-size: 13px; color: #3c4043; margin-top: 4px; line-height: 1.5;">${summaryText}</p>
-                </div>` : '';
-
-
-            // --- RENDER CARD ---
-            return `
-                <div class="pub-card ${priorityClass}" onclick="showPubDetails(currentPubs[${index}])">
-                    <div style="display:flex; justify-content:space-between; align-items:start;">
-                        <div class="pub-title" style="font-weight:500;">${index + 1}. ${pub.name}</div>
-                        <div class="pub-rating" style="white-space:nowrap;">
-                            <span class="stars" style="color:#fbbc04;">★</span> 
-                            ${pub.rating ? pub.rating.toFixed(1) : '--'}
-                            <span style="color:#9aa0a6; font-size:11px;">(${pub.user_ratings_total || 0})</span>
-                        </div>
+                return `
+                    <div class="pub-card ${priorityClass}" onclick="showPubDetails(currentPubs[${index}])">
+                        <div style="font-weight:500;color:#1a73e8;">${index + 1}. ${pub.name}</div>
+                        <div class="pub-address">${pub.vicinity}</div>
+                        ${badgesHTML}
+                        ${distanceHtml}
+                        ${summaryHtml}
                     </div>
-
-                    <div class="pub-address">${pub.vicinity || ''}</div>
-                    
-                    ${badgesDisplay}
-                    ${hoursHtml}
-                    ${distanceHtml}
-                    ${summaryHtml}
-                </div>
-            `;
-        }).join('');
-    }
+                `;
+            }).join('');
+        }
 
         function showPubDetails(pub) {
             const modal = document.getElementById('pub-modal');
-            const title = document.getElementById('modal-title');
-            const body = document.getElementById('modal-body');
-            
-            title.textContent = pub.name;
-            body.innerHTML = `
+            document.getElementById('modal-title').textContent = pub.name;
+            document.getElementById('modal-body').innerHTML = `
                 <p><strong>Rating:</strong> ${pub.rating} (${pub.user_ratings_total} reviews)</p>
                 <p><strong>Address:</strong> ${pub.vicinity}</p>
-                ${pub.editorial_summary ? `<div style="background: #f8f9fa; padding: 12px; margin-top: 12px;"><p>${pub.editorial_summary}</p></div>` : ''}
-                <p style="margin-top: 16px;"><a href="https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(pub.name)}&query_place_id=${pub.place_id}" target="_blank" class="btn btn-primary">View on Google Maps</a></p>
+                <p><a href="https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(pub.name)}&query_place_id=${pub.place_id}" target="_blank" class="btn-primary">View on Google Maps</a></p>
             `;
             modal.style.display = 'block';
         }
 
-        function showLoading() {
-            const layout = document.getElementById('results-layout');
-            layout.style.display = 'block';
-            document.getElementById('route-summary').innerHTML = '<div class="loading">Searching for pubs...</div>';
-            document.getElementById('pub-list').innerHTML = '';
-        }
-
-        function showError(message) {
-            const layout = document.getElementById('results-layout');
-            layout.style.display = 'block';
-            document.getElementById('route-summary').innerHTML = `<div class="error">${message}</div>`;
-        }
+        function showLoading() { document.getElementById('results-layout').style.display = 'block'; document.getElementById('route-summary').innerHTML = '<div class="loading">Searching...</div>'; document.getElementById('pub-list').innerHTML = ''; }
+        function showError(message) { document.getElementById('results-layout').style.display = 'block'; document.getElementById('route-summary').innerHTML = `<div class="error">${message}</div>`; }
 
         document.addEventListener('DOMContentLoaded', function() {
-            const form = document.getElementById('search-form');
-            if (form) {
-                form.addEventListener('submit', async (e) => {
-                    e.preventDefault();
-                    if (!window.googleMapsLoaded) { alert('Please wait for Google Maps to finish loading'); return; }
-                    const formData = new FormData(e.target);
-                    await searchPubs(
-                        formData.get('location'),
-                        formData.get('num-pubs'),
-                        formData.get('historic-filter'),
-                        formData.get('max-distance'),
-                        parseFloat(formData.get('min-rating')),
-                        formData.get('open-now') === 'true',
-                        formData.get('starting-radius')
-                    );
-                });
-            }
-            document.getElementById('modal-close').addEventListener('click', () => document.getElementById('pub-modal').style.display = 'none');
-            window.addEventListener('click', (e) => {
-                if (e.target === document.getElementById('pub-modal')) document.getElementById('pub-modal').style.display = 'none';
+            document.getElementById('search-form').addEventListener('submit', async (e) => {
+                e.preventDefault();
+                if (!window.googleMapsLoaded) { alert('Google Maps loading...'); return; }
+                const formData = new FormData(e.target);
+                await searchPubs(formData.get('location'), formData.get('num-pubs'), formData.get('historic-filter'), formData.get('max-distance'), parseFloat(formData.get('min-rating')), formData.get('open-now') === 'true', formData.get('starting-radius'));
             });
+            document.getElementById('modal-close').addEventListener('click', () => document.getElementById('pub-modal').style.display = 'none');
+            window.addEventListener('click', (e) => { if (e.target === document.getElementById('pub-modal')) document.getElementById('pub-modal').style.display = 'none'; });
         });
     </script>
 
