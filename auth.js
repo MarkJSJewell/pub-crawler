@@ -10,105 +10,90 @@ const firebaseConfig = {
 };
 
 // Initialize Firebase
-firebase.initializeApp(firebaseConfig);
+const app = firebase.initializeApp(firebaseConfig);
 
-// Initialize Firebase App Check with reCAPTCHA v3
-// Replace 'YOUR_RECAPTCHA_V3_SITE_KEY' with your actual reCAPTCHA v3 site key
+// Initialize Firebase App Check
 const appCheck = firebase.appCheck();
 appCheck.activate(
-    '6Ld_OCgsAAAAAAgEbt4nOW6wuO0cJKI9bEo80fae', // <-- REPLACE THIS WITH YOUR RECAPTCHA V3 SITE KEY
-    true // Pass true to enable automatic token refresh
+    '6Ld_OCgsAAAAAAgEbt4nOW6wuO0cJKI9bEo80fae', 
+    true 
 );
 
 console.log('Firebase App Check initialized');
-
-// Backend URL for serverless functions
 const BACKEND_URL = 'https://pub-crawler-backend.vercel.app/api';
 
-console.log('Script starting...');
+// [NEW] Google Login Function
+function loginWithGoogle() {
+    const provider = new firebase.auth.GoogleAuthProvider();
+    firebase.auth().signInWithPopup(provider)
+        .then((result) => {
+            console.log("Logged in with Google:", result.user.email);
+            // App state updates handled by onAuthStateChanged
+        }).catch((error) => {
+            console.error("Login failed:", error.message);
+            alert("Login failed: " + error.message);
+        });
+}
 
 // Check authentication state
 firebase.auth().onAuthStateChanged((user) => {
+    const loginBtn = document.getElementById('login-btn');
+    const logoutBtn = document.getElementById('logout-btn');
+    const emailSpan = document.getElementById('user-email');
+
     if (user) {
         console.log('Logged in as:', user.email);
+        if (emailSpan) emailSpan.textContent = user.email.split('@')[0];
         
-        // Extract username (part before @)
-        const username = user.email.split('@')[0];
-        const userEmailElement = document.getElementById('user-email');
-        if (userEmailElement) {
-            userEmailElement.textContent = username;
-        }
+        // Show Logout, Hide Login
+        if (loginBtn) loginBtn.style.display = 'none';
+        if (logoutBtn) logoutBtn.style.display = 'block';
         
-        // Initialize the app with the authenticated user
         initializeApp();
     } else {
-        // Not logged in, redirect to login page
-        console.log('Not logged in, redirecting...');
-        window.location.href = 'login.html';
+        console.log('Not logged in');
+        if (emailSpan) emailSpan.textContent = '';
+        
+        // Show Login, Hide Logout
+        if (loginBtn) loginBtn.style.display = 'block';
+        if (logoutBtn) logoutBtn.style.display = 'none';
+        
+        // Only redirect if explicitly on a protected page (optional logic)
+        // window.location.href = 'login.html'; 
     }
 });
 
 function signOut() {
     firebase.auth().signOut().then(() => {
-        console.log('Signed out successfully');
-        window.location.href = 'login.html';
+        console.log('Signed out');
+        window.location.reload();
     }).catch((error) => {
         console.error('Sign out error:', error);
     });
 }
 
-// Initialize the app after authentication
 async function initializeApp() {
     console.log('App initialized with authenticated user');
-    
-    // Check if Google Maps is already loaded
-    if (window.googleMapsLoaded) {
-        console.log('Google Maps already loaded');
-        return;
-    }
-    
-    try {
-        // Fetch API key from backend
-        await fetchApiKeyAndInitialize();
-    } catch (error) {
-        console.error('Error:', error);
-        document.getElementById('api-status').innerHTML = 
-            '<span style="color: #ea4335;">⚠ Failed to connect. Please refresh the page.</span>';
-    }
+    if (window.googleMapsLoaded) return;
+    try { await fetchApiKeyAndInitialize(); } 
+    catch (error) { console.error('Error:', error); }
 }
 
 async function fetchApiKeyAndInitialize() {
     try {
-        console.log('Fetching API key from backend...');
-        
-        // Get Firebase auth token
         const user = firebase.auth().currentUser;
-        if (!user) {
-            throw new Error('User not authenticated');
-        }
+        if (!user) throw new Error('User not authenticated');
         const token = await user.getIdToken();
         
-        // Fetch API key from backend
         const response = await fetch(`${BACKEND_URL}/get-api-key`, {
             method: 'GET',
-            headers: {
-                'Authorization': `Bearer ${token}`
-            }
+            headers: { 'Authorization': `Bearer ${token}` }
         });
         
-        if (!response.ok) {
-            throw new Error(`Failed to fetch API key: ${response.status}`);
-        }
-        
+        if (!response.ok) throw new Error(`Failed to fetch API key`);
         const data = await response.json();
+        if (!data.apiKey) throw new Error('No API key received');
         
-        if (!data.apiKey) {
-            throw new Error('No API key received from backend');
-        }
-        
-        console.log('✓ API key received from backend');
-        
-        // Load Google Maps with the API key
         await loadGoogleMaps(data.apiKey);
         
     } catch (error) {
@@ -119,37 +104,12 @@ async function fetchApiKeyAndInitialize() {
 
 function loadGoogleMaps(apiKey) {
     return new Promise((resolve, reject) => {
-        console.log('Loading Google Maps API...');
-        
-        // Create callback function
-
-window.initGoogleMapsCallback = function() {
-    console.log('Google Maps loaded');
-    window.googleMapsLoaded = true;
-    
-    // Initialize Google Maps services (geocoder, directions, etc.)
-    if (typeof initializeGoogleMaps === 'function') {
-        initializeGoogleMaps();
-    }
-    
-    // Initialize autocomplete
-    if (typeof initializeAutocomplete === 'function') {
-        initializeAutocomplete();
-    }
-    
-    document.getElementById('api-status').innerHTML = 
-        '<span style="color: #34a853;">✓ Google Maps connected!</span>';
-    resolve();
-};
-
-        
-        // Create script tag
+        // Callback is already defined in index.html, we just point to it
         const script = document.createElement('script');
-	script.src = `https://maps.googleapis.com/maps/api/js?key=${apiKey}&libraries=places,geometry&callback=initGoogleMapsCallback`;
+        script.src = `https://maps.googleapis.com/maps/api/js?key=${apiKey}&libraries=places,geometry&callback=initGoogleMapsCallback`;
         script.async = true;
         script.defer = true;
         script.onerror = () => reject(new Error('Failed to load Google Maps'));
-        
         document.head.appendChild(script);
     });
 }
