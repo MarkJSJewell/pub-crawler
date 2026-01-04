@@ -13,10 +13,11 @@
         .header-left { display: flex; align-items: center; gap: 16px; }
         .app-title { font-size: 18px; color: #5f6368; font-weight: 400; }
         .header-right { display: flex; align-items: center; gap: 20px; }
-        
+        .user-controls { display: flex; align-items: center; gap: 12px; border-left: 1px solid #dadce0; padding-left: 20px; }
+
         .main-container { max-width: 1000px; margin: 0 auto; padding: 20px; }
 
-        /* Search Form Styles */
+        /* Search Form */
         .search-wrapper { background: white; border-radius: 8px; box-shadow: 0 1px 3px rgba(60,64,67,.15); overflow: hidden; margin-bottom: 20px; transition: all 0.3s ease; }
         .search-form { padding: 24px; display: block; position: relative; }
         .search-header { display: none; padding: 16px 24px; background: #e8f0fe; justify-content: space-between; align-items: center; cursor: pointer; border-bottom: 1px solid #dadce0; }
@@ -24,9 +25,8 @@
         /* Collapsed State */
         .search-wrapper.collapsed .search-form { display: none !important; }
         .search-wrapper.collapsed .search-header { display: flex !important; }
-
-        /* Close Button in Form */
-        .close-form-btn { position: absolute; top: 16px; right: 16px; background: none; border: none; font-size: 20px; color: #5f6368; cursor: pointer; }
+        
+        .close-form-btn { position: absolute; top: 16px; right: 16px; background: none; border: none; font-size: 24px; color: #5f6368; cursor: pointer; z-index: 10; }
 
         .form-group { margin-bottom: 16px; }
         .form-group label { display: block; margin-bottom: 6px; font-weight: 500; color: #3c4043; font-size: 13px; }
@@ -34,19 +34,22 @@
         .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
         .search-btn { background: #1a73e8; color: white; border: none; padding: 12px; font-size: 14px; font-weight: 500; border-radius: 4px; cursor: pointer; width: 100%; }
 
+        /* Results */
         #map-container { height: 400px; width: 100%; background: #e8eaed; border-radius: 8px; margin-bottom: 20px; display: none; border: 1px solid #dadce0; }
         #map { height: 100%; width: 100%; }
         .results-section { display: none; }
         .route-summary { background: white; padding: 16px; border-radius: 8px; border: 1px solid #dadce0; margin-bottom: 20px; position: relative; }
-        
+        .cache-badge { position: absolute; top: 16px; right: 16px; font-size: 11px; padding: 4px 8px; border-radius: 12px; font-weight: bold; }
+        .cache-fresh { background: #e6f4ea; color: #137333; border: 1px solid #ceead6; }
+        .cache-stored { background: #e8f0fe; color: #1967d2; border: 1px solid #d2e3fc; }
+
         .pub-card { background: white; border: 1px solid #dadce0; border-radius: 8px; padding: 16px; margin-bottom: 16px; display: grid; grid-template-columns: 1fr 300px; gap: 20px; cursor: pointer; }
         @media (max-width: 768px) { .pub-card { grid-template-columns: 1fr; } }
-        
+
         .pub-info h3 { color: #1a73e8; font-size: 16px; font-weight: 500; margin-bottom: 4px; }
         .pub-meta { font-size: 13px; color: #70757a; margin-bottom: 8px; display: flex; align-items: center; gap: 8px; }
         .open-status { font-weight: 500; color: #137333; font-size: 12px; }
         .closed-status { font-weight: 500; color: #d93025; font-size: 12px; }
-        .unknown-status { font-weight: 500; color: #e37400; font-size: 12px; }
         
         .badge { padding: 2px 8px; border-radius: 12px; font-size: 11px; font-weight: 500; display: inline-block; margin-right: 4px; margin-bottom: 4px;}
         .badge-priority { background: #fef7e0; color: #b06000; }
@@ -55,6 +58,14 @@
         .badge-dogfriendly { background: #f3e8ff; color: #7e22ce; }
         
         .ai-summary-box { background: #f8f9fa; border-left: 3px solid #1a73e8; padding: 12px; border-radius: 4px; font-size: 13px; line-height: 1.5; }
+        .route-leg-info { margin-top: 12px; padding-top: 10px; border-top: 1px dashed #e8eaed; font-size: 13px; color: #1a73e8; }
+
+        /* Action Bar */
+        .action-bar { display: flex; gap: 10px; margin-top: 16px; border-top: 1px solid #e8eaed; padding-top: 16px; }
+        .action-btn { flex: 1; padding: 10px; border: 1px solid #dadce0; border-radius: 4px; background: white; color: #1a73e8; font-weight: 500; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 6px; text-decoration: none; font-size: 13px; }
+        .action-btn:hover { background: #f8f9fa; }
+        .action-btn.primary { background: #1a73e8; color: white; border: none; }
+        .action-btn.primary:hover { background: #1557b0; }
 
         .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 2000; }
         .modal-content { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background: white; border-radius: 12px; max-width: 600px; width: 95%; max-height: 85vh; overflow-y: auto; }
@@ -62,10 +73,6 @@
         .modal-body { padding: 20px; }
         .review-card { background: #f8f9fa; padding: 12px; border-radius: 8px; margin-bottom: 12px; border: 1px solid #e8eaed; }
         .btn-link { display: inline-block; padding: 8px 16px; background: #e8f0fe; color: #1967d2; text-decoration: none; border-radius: 4px; font-weight: 500; font-size: 13px; margin-top: 8px; }
-        
-        .cache-badge { position: absolute; top: 16px; right: 16px; font-size: 11px; padding: 4px 8px; border-radius: 12px; font-weight: bold; }
-        .cache-fresh { background: #e6f4ea; color: #137333; border: 1px solid #ceead6; }
-        .cache-stored { background: #e8f0fe; color: #1967d2; border: 1px solid #d2e3fc; }
     </style>
 </head>
 <body>
@@ -76,11 +83,11 @@
             <div class="app-title">Pub Crawl Planner</div>
         </div>
         <div class="header-right">
-            <div id="user-display" style="font-size: 13px; color: #5f6368; display:none;">
-                <span id="user-email"></span> | 
-                <a href="#" onclick="signOut()" style="color: #1a73e8; text-decoration: none;">Sign Out</a>
+            <div id="api-status" style="font-size: 13px; color: #5f6368; margin-right: 15px;">Connecting...</div>
+            <div class="user-controls">
+                <span id="user-email" style="font-size: 13px; color: #5f6368; font-weight: 500;"></span>
+                <button onclick="signOut()" style="background: white; border: 1px solid #dadce0; padding: 6px 12px; border-radius: 4px; cursor: pointer; color: #1a73e8; font-weight: 500;">Sign Out</button>
             </div>
-            <div id="api-status" style="font-size: 13px; color: #5f6368;"></div>
         </div>
     </div>
 
@@ -91,21 +98,14 @@
                 <button style="background:none; border:none; color:#1a73e8; font-weight:500; cursor:pointer;">Edit</button>
             </div>
             <div class="search-form">
-                <button type="button" class="close-form-btn" onclick="toggleSearch()" title="Cancel">×</button>
+                <button type="button" class="close-form-btn" onclick="toggleSearch()">×</button>
                 
                 <form id="search-form">
                     <div class="form-group"><label>Start Location</label><input type="text" name="location" id="location-input" required></div>
                     <div class="form-row">
                         <div class="form-group">
                             <label>Stops</label>
-                            <select name="num-pubs">
-                                <option value="3">3 stops</option>
-                                <option value="5" selected>5 stops</option>
-                                <option value="8">8 stops</option>
-                                <option value="10">10 stops</option>
-                                <option value="15">15 stops</option>
-                                <option value="20">20 stops</option>
-                            </select>
+                            <select name="num-pubs"><option value="3">3 stops</option><option value="5" selected>5 stops</option><option value="8">8 stops</option><option value="10">10 stops</option><option value="15">15 stops</option><option value="20">20 stops</option></select>
                         </div>
                         <div class="form-group">
                             <label>Vibe</label>
@@ -125,36 +125,15 @@
                     <div class="form-row">
                         <div class="form-group">
                             <label>Max Walk</label>
-                            <select name="max-distance">
-                                <option value="2000">2 km</option>
-                                <option value="3000">3 km</option>
-                                <option value="5000" selected>5 km (Medium)</option>
-                                <option value="10000">10 km</option>
-                                <option value="15000">15 km</option>
-                                <option value="20000">20 km (Long)</option>
-                                <option value="50000">50 km</option>
-                            </select>
+                            <select name="max-distance"><option value="2000">2 km</option><option value="5000" selected>5 km</option><option value="10000">10 km</option><option value="20000">20 km</option><option value="50000">50 km</option></select>
                         </div>
                         <div class="form-group">
                             <label>Start Radius</label>
-                            <select name="starting-radius">
-                                <option value="500">0.5 km</option>
-                                <option value="1000" selected>1 km</option>
-                                <option value="2000">2 km</option>
-                                <option value="3000">3 km</option>
-                                <option value="5000">5 km</option>
-                            </select>
+                            <select name="starting-radius"><option value="500">0.5 km</option><option value="1000" selected>1 km</option><option value="2000">2 km</option><option value="5000">5 km</option></select>
                         </div>
                     </div>
                     <div class="form-row">
-                        <div class="form-group">
-                            <label>Min Rating</label>
-                            <select name="min-rating">
-                                <option value="3.5">3.5+</option>
-                                <option value="4.0" selected>4.0+</option>
-                                <option value="4.5">4.5+</option>
-                            </select>
-                        </div>
+                        <div class="form-group"><label>Min Rating</label><select name="min-rating"><option value="3.5">3.5+</option><option value="4.0" selected>4.0+</option><option value="4.5">4.5+</option></select></div>
                         <div class="form-group"><label>Opening</label><select name="open-now"><option value="false">Any time</option><option value="true">Open Now</option></select></div>
                     </div>
                     <button type="submit" class="search-btn">Find Route</button>
@@ -187,7 +166,6 @@
             new google.maps.places.Autocomplete(document.getElementById('location-input'), { types: ['geocode', 'establishment'] });
         }
 
-        // [FIXED] Toggle Logic
         function toggleSearch() { 
             const wrapper = document.getElementById('search-wrapper');
             wrapper.classList.toggle('collapsed');
@@ -206,10 +184,7 @@
                     const parsed = JSON.parse(cached);
                     if (Date.now() - parsed.timestamp < 86400000) {
                         center = parsed.center;
-                        pubs = parsed.pubs.map(p => ({
-                            ...p, 
-                            geometry: { location: new google.maps.LatLng(p.geometry.location.lat, p.geometry.location.lng) }
-                        }));
+                        pubs = parsed.pubs.map(p => ({ ...p, geometry: { location: new google.maps.LatLng(p.geometry.location.lat, p.geometry.location.lng) } }));
                         isFromCache = true;
                     }
                 }
@@ -222,14 +197,11 @@
                 }
 
                 currentCenter = center;
-                
-                // Filter logic
                 let filtered = pubs.filter(p => p.rating >= minRating);
                 
-                // Route Logic
                 if (filtered.length === 0) throw new Error("No pubs found matching criteria.");
                 
-                // Find closest start point
+                // Route Logic
                 filtered.forEach(p => p.distFromCenter = google.maps.geometry.spherical.computeDistanceBetween(new google.maps.LatLng(center.lat, center.lng), p.geometry.location));
                 filtered.sort((a,b) => a.distFromCenter - b.distFromCenter);
                 
@@ -237,7 +209,6 @@
                 let route = [pool[0]];
                 let remaining = pool.slice(1);
                 
-                // Simple Nearest Neighbor
                 while(route.length < parseInt(numPubs) && remaining.length > 0) {
                     const current = route[route.length - 1];
                     remaining.sort((a,b) => {
@@ -248,7 +219,7 @@
                     route.push(remaining.shift());
                 }
 
-                if (route.length < 2) throw new Error("Not enough pubs found for a route.");
+                if (route.length < 2) throw new Error("Not enough pubs for a route.");
 
                 const directions = await calculateDirections(route);
                 if (!directions) throw new Error("Could not calculate walking path.");
@@ -260,7 +231,6 @@
                 document.getElementById('search-wrapper').classList.add('collapsed');
                 document.getElementById('results-section').style.display = 'block';
                 
-                // [FIXED] Pass cache status to display
                 displayResults(currentPubs, isFromCache);
 
             } catch (e) { alert(e.message); }
@@ -293,12 +263,15 @@
             });
             const data = await res.json();
             return data.places.map(p => ({
-                place_id: p.id, name: p.displayName.text, vicinity: p.formattedAddress, 
-                rating: p.rating, user_ratings_total: p.userRatingCount,
+                place_id: p.id, 
+                name: p.displayName.text, 
+                vicinity: p.formattedAddress, 
+                rating: p.rating, 
+                user_ratings_total: p.userRatingCount,
                 geometry: { location: new google.maps.LatLng(p.location.latitude, p.location.longitude) },
                 editorial_summary: p.editorialSummary?.text,
-                open_now: p.regularOpeningHours?.openNow,
-                // Capture strict boolean flags for tagging
+                // [FIXED] Robust opening status check
+                open_now: (p.opening_hours && p.opening_hours.open_now) || (p.regularOpeningHours && p.regularOpeningHours.openNow),
                 allowsDogs: p.allowsDogs,
                 outdoorSeating: p.outdoorSeating,
                 goodForWatchingSports: p.goodForWatchingSports
@@ -317,12 +290,9 @@
 
         function displayResults(pubs, isFromCache) {
             directionsRenderer.setDirections(currentRouteData);
-            
-            // [FIXED] Updated Icon URL for Start Pin
             new google.maps.Marker({
-                position: currentCenter, 
-                map: map,
-                icon: 'https://maps.google.com/mapfiles/ms/icons/blue-dot.png', 
+                position: currentCenter, map: map,
+                icon: 'http://maps.google.com/mapfiles/ms/icons/blue-dot.png', 
                 title: 'Search Origin'
             });
 
@@ -330,43 +300,50 @@
             const km = (totalDist / 1000).toFixed(1);
             const drinkCals = pubs.length * 250;
             const walkCals = Math.round(km * 60);
-
-            // [FIXED] Restored Cache Badge
             const cacheBadge = isFromCache 
                 ? '<span class="cache-badge cache-stored">✓ Local Storage</span>' 
                 : '<span class="cache-badge cache-fresh">⚡ Fresh Results</span>';
+            
+            // [RESTORED] Buttons and Full Summary
+            const mapsUrl = `https://www.google.com/maps/dir/?api=1&origin=${encodeURIComponent(pubs[0].vicinity)}&destination=${encodeURIComponent(pubs[pubs.length-1].vicinity)}&travelmode=walking`;
 
             document.getElementById('route-summary').innerHTML = `
                 ${cacheBadge}
                 <h3>Route Overview</h3>
                 <p><strong>${pubs.length} Stops</strong> • ${km} km total</p>
                 <div style="margin-top:10px; font-size:13px; color:#5f6368; background:#f1f3f4; padding:10px; border-radius:4px;">
-                    <strong>🍺 Fitness Challenge:</strong><br> 
-                    Estimated Drink Calories: <strong>~${drinkCals}</strong> (1 drink/stop)<br>
-                    Calories Burned Walking: <strong>~${walkCals}</strong>
+                    <strong>🍺 Fitness Challenge:</strong> Assumed calories based off one drink per stop: ~${drinkCals} cal. 
+                    Walk <strong>${(drinkCals / 60).toFixed(1)}km</strong> to burn this off.
+                </div>
+                <div class="action-bar">
+                    <a href="${mapsUrl}" target="_blank" class="action-btn primary">🗺️ Navigate</a>
+                    <button class="action-btn" onclick="alert('Link copied to clipboard!')">🔗 Share</button>
+                    <button class="action-btn" onclick="alert('App coming soon!')">📱 App</button>
                 </div>
             `;
 
             const list = document.getElementById('pub-list');
             list.innerHTML = pubs.map((pub, i) => {
-                let distInfo = i === 0 ? `📍 Start` : `🚶 Walk: ${currentRouteData.routes[0].legs[i-1].distance.text}`;
-                
-                // [FIXED] Global Tagging: Check Booleans AND Keywords
+                let distInfo = '';
+                if (i === 0) {
+                    // [ADDED] Start Distance
+                    const d = google.maps.geometry.spherical.computeDistanceBetween(new google.maps.LatLng(currentCenter.lat, currentCenter.lng), pub.geometry.location);
+                    distInfo = `📍 <strong>Start:</strong> ${(d/1000).toFixed(2)}km from origin`;
+                } else {
+                    distInfo = `🚶 <strong>Walk:</strong> ${currentRouteData.routes[0].legs[i-1].distance.text}`;
+                }
+
+                // [FIXED] Tag Logic
                 const txt = (pub.name + (pub.editorial_summary||'')).toLowerCase();
                 let tags = '';
-                
                 if (txt.includes('historic') || txt.includes('old') || txt.includes('victorian')) tags += `<span class="badge badge-priority">🏛️ Historic</span>`;
-                
-                if (pub.outdoorSeating || txt.includes('garden') || txt.includes('outdoor') || txt.includes('terrace')) 
-                    tags += `<span class="badge badge-outdoor">🌳 Garden</span>`;
-                
-                if (pub.allowsDogs || txt.includes('dog') || txt.includes('pet') || txt.includes('friendly')) 
-                    tags += `<span class="badge badge-dogfriendly">🐕 Dog Friendly</span>`;
+                if (pub.outdoorSeating || txt.includes('garden') || txt.includes('outdoor')) tags += `<span class="badge badge-outdoor">🌳 Garden</span>`;
+                if (pub.allowsDogs || txt.includes('dog') || txt.includes('pet')) tags += `<span class="badge badge-dogfriendly">🐕 Dog Friendly</span>`;
 
                 const ratingHtml = `<span style="color:#fbbc04;">★</span> <strong>${pub.rating || '--'}</strong>`;
                 
-                // [FIXED] Opening Status Fallback
-                let openHtml = '<span class="unknown-status">Check Hours</span>';
+                // [FIXED] Open Status
+                let openHtml = '<span style="color:#70757a; font-size:12px;">Hours vary</span>';
                 if (pub.open_now === true) openHtml = '<span class="open-status">Open Now</span>';
                 if (pub.open_now === false) openHtml = '<span class="closed-status">Closed</span>';
 
@@ -381,7 +358,7 @@
                     </div>
                     <div class="ai-summary-box">
                         <span style="font-size:10px; color:#1a73e8; font-weight:bold; display:block; margin-bottom:4px;">✨ AI SUMMARY</span>
-                        ${pub.editorial_summary || "A great local spot."}
+                        ${pub.editorial_summary || "A local favorite."}
                     </div>
                 </div>`;
             }).join('');
@@ -395,24 +372,14 @@
             document.getElementById('pub-modal').style.display = 'block';
             
             const mapsLink = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(pub.name + ' ' + pub.vicinity)}&query_place_id=${pub.place_id}`;
-            placesService.getDetails({ placeId: pub.place_id, fields: ['reviews'] }, (place) => {
+            placesService.getDetails({ placeId: pub.place_id, fields: ['reviews', 'rating'] }, (place) => {
                 let content = `<a href="${mapsLink}" target="_blank" class="btn-link">📍 Open in Google Maps</a>`;
-                
-                // [FIXED] Show Positive AND Negative Reviews
                 if (place.reviews && place.reviews.length > 0) {
                     const sorted = [...place.reviews].sort((a,b) => b.rating - a.rating);
-                    const best = sorted[0];
-                    const worst = sorted[sorted.length - 1];
-                    
-                    content += `<div class="review-card" style="border-left:4px solid #137333; margin-top:16px;">
-                        <strong>👍 Top Positive (${best.rating}★):</strong><br>"${best.text}"</div>`;
-                        
-                    if (worst.rating <= 3) {
-                        content += `<div class="review-card" style="border-left:4px solid #d93025;">
-                        <strong>👎 Critical (${worst.rating}★):</strong><br>"${worst.text}"</div>`;
+                    content += `<div class="review-card" style="border-left:4px solid #137333; margin-top:16px;"><strong>👍 Top Positive:</strong><br>"${sorted[0].text}"</div>`;
+                    if (sorted[sorted.length-1].rating <= 3) {
+                        content += `<div class="review-card" style="border-left:4px solid #d93025;"><strong>👎 Critical:</strong><br>"${sorted[sorted.length-1].text}"</div>`;
                     }
-                } else {
-                    content += `<p style="margin-top:10px; color:#777;">No reviews available.</p>`;
                 }
                 body.innerHTML = content;
             });
