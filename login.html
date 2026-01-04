@@ -4,489 +4,105 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Login - Pub Crawl Planner</title>
-    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🍺</text></svg>">
-    <!-- reCAPTCHA Script -->
-    <script src="https://www.google.com/recaptcha/api.js" async defer></script>
     <style>
-        * {
+        body {
             margin: 0;
             padding: 0;
-            box-sizing: border-box;
-        }
-
-        body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            min-height: 100vh;
+            font-family: 'Google Sans', 'Roboto', Arial, sans-serif;
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
         }
 
-        .login-container {
+        .login-card {
             background: white;
             padding: 40px;
-            border-radius: 15px;
-            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            border-radius: 16px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.2);
             width: 100%;
-            max-width: 420px;
-            animation: slideIn 0.3s ease-out;
-        }
-
-        @keyframes slideIn {
-            from {
-                opacity: 0;
-                transform: translateY(-20px);
-            }
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
-        }
-
-        .logo {
+            max-width: 400px;
             text-align: center;
-            font-size: 48px;
-            margin-bottom: 10px;
         }
 
-        h1 {
-            text-align: center;
-            color: #333;
-            margin-bottom: 10px;
-            font-size: 28px;
-        }
+        .icon { font-size: 48px; margin-bottom: 16px; display: block; }
+        h1 { color: #202124; margin-bottom: 8px; font-size: 24px; }
+        p { color: #5f6368; margin-bottom: 32px; font-size: 14px; }
 
-        .subtitle {
-            text-align: center;
-            color: #666;
-            margin-bottom: 30px;
-            font-size: 14px;
-        }
-
-        .form-group {
-            margin-bottom: 20px;
-        }
-
-        label {
-            display: block;
-            margin-bottom: 5px;
-            color: #555;
+        .btn-google {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #dadce0;
+            border-radius: 4px;
+            background: white;
+            color: #3c4043;
             font-weight: 500;
             font-size: 14px;
-        }
-
-        input {
-            width: 100%;
-            padding: 14px;
-            border: 2px solid #e0e0e0;
-            border-radius: 8px;
-            font-size: 16px;
-            transition: all 0.3s;
-        }
-
-        input:focus {
-            outline: none;
-            border-color: #667eea;
-            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
-        }
-
-        button {
-            width: 100%;
-            padding: 14px;
-            margin: 10px 0;
-            border: none;
-            border-radius: 8px;
-            font-size: 16px;
-            font-weight: 600;
             cursor: pointer;
-            transition: all 0.3s;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
+            transition: background 0.2s;
         }
 
-        .btn-login {
-            background: #667eea;
-            color: white;
-        }
+        .btn-google:hover { background-color: #f8f9fa; }
+        
+        .divider { margin: 24px 0; border-top: 1px solid #e8eaed; position: relative; }
+        .divider span { background: white; padding: 0 10px; color: #5f6368; font-size: 12px; position: absolute; top: -8px; left: 50%; transform: translateX(-50%); }
 
-        .btn-login:hover {
-            background: #5568d3;
-            transform: translateY(-2px);
-            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.3);
-        }
-
-        .btn-register {
-            background: #48bb78;
-            color: white;
-        }
-
-        .btn-register:hover {
-            background: #38a169;
-            transform: translateY(-2px);
-            box-shadow: 0 5px 15px rgba(72, 187, 120, 0.3);
-        }
-
-        button:disabled {
-            background: #ccc;
-            cursor: not-allowed;
-            transform: none;
-        }
-
-        .message {
+        .form-group { margin-bottom: 16px; text-align: left; }
+        .form-group label { display: block; font-size: 12px; color: #5f6368; margin-bottom: 4px; }
+        .form-group input { width: 100%; padding: 10px; border: 1px solid #dadce0; border-radius: 4px; font-size: 14px; box-sizing: border-box; }
+        
+        .btn-primary {
+            width: 100%;
             padding: 12px;
-            margin: 15px 0;
-            border-radius: 8px;
-            display: none;
+            background: #34a853; /* Green from your image */
+            color: white;
+            border: none;
+            border-radius: 4px;
+            font-weight: bold;
             font-size: 14px;
-            animation: slideIn 0.3s ease-out;
-        }
-
-        .error {
-            background: #fee;
-            color: #c33;
-            border: 1px solid #fcc;
-        }
-
-        .success {
-            background: #efe;
-            color: #3c3;
-            border: 1px solid #cfc;
-        }
-
-        .info {
-            background: #eef;
-            color: #33c;
-            border: 1px solid #ccf;
-        }
-
-        .toggle-text {
-            text-align: center;
-            margin-top: 25px;
-            color: #666;
-            font-size: 14px;
-        }
-
-        .toggle-text a {
-            color: #667eea;
             cursor: pointer;
-            text-decoration: none;
-            font-weight: 600;
-            transition: color 0.3s;
+            margin-top: 16px;
         }
-
-        .toggle-text a:hover {
-            color: #5568d3;
-            text-decoration: underline;
-        }
-
-        .loading {
-            display: inline-block;
-            width: 20px;
-            height: 20px;
-            border: 3px solid #f3f3f3;
-            border-top: 3px solid #667eea;
-            border-radius: 50%;
-            animation: spin 1s linear infinite;
-            vertical-align: middle;
-            margin-left: 10px;
-        }
-
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-        }
-
-        .password-requirements {
-            font-size: 12px;
-            color: #666;
-            margin-top: 5px;
-            padding-left: 5px;
-        }
-
-        .hidden {
-            display: none !important;
-        }
-
-        .recaptcha-container {
-            margin: 20px 0;
-            display: flex;
-            justify-content: center;
-        }
+        .btn-primary:hover { background: #2d8e47; }
+        
+        .footer-link { display: block; margin-top: 16px; font-size: 13px; color: #1a73e8; text-decoration: none; }
     </style>
 </head>
 <body>
-    <div class="login-container">
-        <div class="logo">🍺</div>
+
+    <div class="login-card">
+        <span class="icon">🍺</span>
         <h1>Pub Crawl Planner</h1>
-        <p class="subtitle">Discover & route between the finest establishments</p>
+        <p>Discover & route between the finest establishments</p>
+
+        <button class="btn-google" onclick="loginWithGoogle()">
+            <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" width="18" height="18" alt="G">
+            Sign in with Google
+        </button>
+
+        <div class="divider"><span>OR</span></div>
+
+        <div class="form-group">
+            <label>Email Address</label>
+            <input type="email" id="email" placeholder="your@email.com">
+        </div>
+        <div class="form-group">
+            <label>Password</label>
+            <input type="password" id="password" placeholder="At least 6 characters">
+        </div>
+
+        <button class="btn-primary" onclick="alert('Please use Google Sign In for this demo')">CREATE ACCOUNT</button>
         
-        <!-- Login Form -->
-        <div id="login-form">
-            <h2 style="margin-bottom: 20px; color: #667eea;">Welcome Back</h2>
-            
-            <div class="form-group">
-                <label for="login-email">Email Address</label>
-                <input type="email" id="login-email" placeholder="your@email.com" required autocomplete="email">
-            </div>
-
-            <div class="form-group">
-                <label for="login-password">Password</label>
-                <input type="password" id="login-password" placeholder="Enter your password" required autocomplete="current-password">
-            </div>
-
-            <button class="btn-login" id="login-btn" onclick="login()">
-                Sign In
-            </button>
-
-            <div class="message error" id="login-error"></div>
-            
-            <div class="toggle-text">
-                Don't have an account? <a onclick="showRegister()">Create one</a>
-            </div>
-        </div>
-
-        <!-- Register Form -->
-        <div id="register-form" class="hidden">
-            <h2 style="margin-bottom: 20px; color: #48bb78;">Create Account</h2>
-            
-            <div class="form-group">
-                <label for="register-email">Email Address</label>
-                <input type="email" id="register-email" placeholder="your@email.com" required autocomplete="email">
-            </div>
-
-            <div class="form-group">
-                <label for="register-password">Password</label>
-                <input type="password" id="register-password" placeholder="At least 6 characters" required autocomplete="new-password">
-                <div class="password-requirements">Must be at least 6 characters long</div>
-            </div>
-
-            <div class="form-group">
-                <label for="register-confirm">Confirm Password</label>
-                <input type="password" id="register-confirm" placeholder="Re-enter your password" required autocomplete="new-password">
-            </div>
-
-            <!-- reCAPTCHA Widget - REPLACE WITH YOUR RECAPTCHA V2 SITE KEY -->
-            <div class="recaptcha-container">
-                <div class="g-recaptcha" data-sitekey="6LdO9CAsAAAAANuNemDIGNIfwSTv1aMfwQmiXyR2"></div>
-            </div>
-
-            <button class="btn-register" id="register-btn" onclick="register()">
-                Create Account
-            </button>
-
-            <div class="message error" id="register-error"></div>
-            <div class="message success" id="register-success"></div>
-            
-            <div class="toggle-text">
-                Already have an account? <a onclick="showLogin()">Sign in</a>
-            </div>
-        </div>
+        <a href="#" class="footer-link">Already have an account? Sign in</a>
     </div>
 
-    <!-- Firebase SDK - Using version 9.23.0 for better compatibility -->
-    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
-
-    <script>
-        // Check if Firebase loaded
-        console.log('Firebase check:', typeof firebase);
-        
-        if (typeof firebase === 'undefined') {
-            document.body.innerHTML = '<div style="text-align:center;padding:50px;font-family:sans-serif;"><h1>⚠️ Error Loading Authentication</h1><p>Firebase failed to load. Please refresh the page or try again later.</p></div>';
-            throw new Error('Firebase failed to load');
-        }
-
-        console.log('✓ Firebase loaded successfully');
-
-        // Your Firebase configuration
-        const firebaseConfig = {
-            apiKey: "AIzaSyDllyjsS-uJ5ldC95xo8QQuyu9eNwm5i8U",
-            authDomain: "pub-crawler-backend.firebaseapp.com",
-            projectId: "pub-crawler-backend",
-            storageBucket: "pub-crawler-backend.firebasestorage.app",
-            messagingSenderId: "366467560298",
-            appId: "1:366467560298:web:390fda941dabefe1d3eb13",
-            measurementId: "G-JV1KV04E9F"
-        };
-
-        // Initialize Firebase
-        firebase.initializeApp(firebaseConfig);
-        console.log('✓ Firebase initialized successfully');
-
-        // Check if already logged in
-        firebase.auth().onAuthStateChanged((user) => {
-            if (user) {
-                console.log('User already logged in, redirecting...');
-                window.location.href = 'index.html';
-            }
-        });
-
-        function showRegister() {
-            document.getElementById('login-form').classList.add('hidden');
-            document.getElementById('register-form').classList.remove('hidden');
-            clearMessages();
-            if (typeof grecaptcha !== 'undefined') {
-                grecaptcha.reset();
-            }
-        }
-
-        function showLogin() {
-            document.getElementById('register-form').classList.add('hidden');
-            document.getElementById('login-form').classList.remove('hidden');
-            clearMessages();
-        }
-
-        function clearMessages() {
-            document.querySelectorAll('.message').forEach(msg => {
-                msg.style.display = 'none';
-            });
-        }
-
-        function showMessage(id, message) {
-            const element = document.getElementById(id);
-            element.textContent = message;
-            element.style.display = 'block';
-        }
-
-        function setLoading(buttonId, isLoading) {
-            const button = document.getElementById(buttonId);
-            if (isLoading) {
-                button.disabled = true;
-                button.innerHTML += '<span class="loading"></span>';
-            } else {
-                button.disabled = false;
-                const loading = button.querySelector('.loading');
-                if (loading) loading.remove();
-            }
-        }
-
-        async function login() {
-            const email = document.getElementById('login-email').value.trim();
-            const password = document.getElementById('login-password').value;
-            
-            clearMessages();
-
-            if (!email || !password) {
-                showMessage('login-error', 'Please fill in all fields');
-                return;
-            }
-
-            setLoading('login-btn', true);
-
-            try {
-                console.log('Attempting login...');
-                await firebase.auth().signInWithEmailAndPassword(email, password);
-                console.log('Login successful!');
-                // Redirect will happen automatically via onAuthStateChanged
-            } catch (error) {
-                setLoading('login-btn', false);
-                console.error('Login error:', error.code, error.message);
-                
-                let errorMessage = 'Failed to sign in. Please try again.';
-                
-                switch (error.code) {
-                    case 'auth/user-not-found':
-                        errorMessage = 'No account found with this email. Please register first.';
-                        break;
-                    case 'auth/wrong-password':
-                        errorMessage = 'Incorrect password. Please try again.';
-                        break;
-                    case 'auth/invalid-email':
-                        errorMessage = 'Invalid email address format.';
-                        break;
-                    case 'auth/user-disabled':
-                        errorMessage = 'This account has been disabled.';
-                        break;
-                    case 'auth/too-many-requests':
-                        errorMessage = 'Too many failed attempts. Please try again later.';
-                        break;
-                    case 'auth/invalid-credential':
-                        errorMessage = 'Invalid email or password. Please check your credentials.';
-                        break;
-                }
-                
-                showMessage('login-error', errorMessage);
-            }
-        }
-
-        async function register() {
-            const email = document.getElementById('register-email').value.trim();
-            const password = document.getElementById('register-password').value;
-            const confirm = document.getElementById('register-confirm').value;
-            
-            clearMessages();
-
-            if (!email || !password || !confirm) {
-                showMessage('register-error', 'Please fill in all fields');
-                return;
-            }
-
-            if (password !== confirm) {
-                showMessage('register-error', 'Passwords do not match');
-                return;
-            }
-
-            if (password.length < 6) {
-                showMessage('register-error', 'Password must be at least 6 characters long');
-                return;
-            }
-
-            // Validate reCAPTCHA
-            if (typeof grecaptcha === 'undefined') {
-                showMessage('register-error', 'reCAPTCHA not loaded. Please refresh the page.');
-                return;
-            }
-
-            const recaptchaResponse = grecaptcha.getResponse();
-            if (!recaptchaResponse) {
-                showMessage('register-error', 'Please complete the reCAPTCHA verification');
-                return;
-            }
-
-            setLoading('register-btn', true);
-
-            try {
-                console.log('Attempting registration...');
-                await firebase.auth().createUserWithEmailAndPassword(email, password);
-                console.log('Registration successful!');
-                showMessage('register-success', 'Account created successfully! Redirecting...');
-                setTimeout(() => {
-                    window.location.href = 'index.html';
-                }, 1500);
-            } catch (error) {
-                setLoading('register-btn', false);
-                grecaptcha.reset();
-                console.error('Registration error:', error.code, error.message);
-                
-                let errorMessage = 'Failed to create account. Please try again.';
-                
-                switch (error.code) {
-                    case 'auth/email-already-in-use':
-                        errorMessage = 'This email is already registered. Please sign in instead.';
-                        break;
-                    case 'auth/invalid-email':
-                        errorMessage = 'Invalid email address format.';
-                        break;
-                    case 'auth/weak-password':
-                        errorMessage = 'Password is too weak. Please use a stronger password.';
-                        break;
-                }
-                
-                showMessage('register-error', errorMessage);
-            }
-        }
-
-        // Allow Enter key to submit
-        document.addEventListener('keypress', (e) => {
-            if (e.key === 'Enter') {
-                if (!document.getElementById('login-form').classList.contains('hidden')) {
-                    login();
-                } else if (!document.getElementById('register-form').classList.contains('hidden')) {
-                    register();
-                }
-            }
-        });
-    </script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-auth-compat.js"></script>
+    <script src="auth.js"></script>
 </body>
 </html>
