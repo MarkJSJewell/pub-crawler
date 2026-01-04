@@ -16,14 +16,14 @@
         
         .main-container { max-width: 1000px; margin: 0 auto; padding: 20px; }
 
-        /* Search Form Collapsing Logic */
+        /* Search Form Styles */
         .search-wrapper { background: white; border-radius: 8px; box-shadow: 0 1px 3px rgba(60,64,67,.15); overflow: hidden; margin-bottom: 20px; transition: all 0.3s ease; }
         .search-form { padding: 24px; display: block; }
         .search-header { display: none; padding: 16px 24px; background: #e8f0fe; justify-content: space-between; align-items: center; cursor: pointer; border-bottom: 1px solid #dadce0; }
         
-        /* When collapsed class is added */
-        .search-wrapper.collapsed .search-form { display: none; }
-        .search-wrapper.collapsed .search-header { display: flex; }
+        /* Collapsed State */
+        .search-wrapper.collapsed .search-form { display: none !important; }
+        .search-wrapper.collapsed .search-header { display: flex !important; }
 
         .form-group { margin-bottom: 16px; }
         .form-group label { display: block; margin-bottom: 6px; font-weight: 500; color: #3c4043; font-size: 13px; }
@@ -57,7 +57,6 @@
         .modal-header { padding: 20px; border-bottom: 1px solid #e8eaed; display: flex; justify-content: space-between; align-items: center; position: sticky; top: 0; background: white; }
         .modal-body { padding: 20px; }
         .review-card { background: #f8f9fa; padding: 12px; border-radius: 8px; margin-bottom: 12px; border: 1px solid #e8eaed; }
-        
         .btn-link { display: inline-block; padding: 8px 16px; background: #e8f0fe; color: #1967d2; text-decoration: none; border-radius: 4px; font-weight: 500; font-size: 13px; margin-top: 8px; }
     </style>
 </head>
@@ -87,21 +86,66 @@
                 <form id="search-form">
                     <div class="form-group"><label>Start Location</label><input type="text" name="location" id="location-input" required></div>
                     <div class="form-row">
-                        <div class="form-group"><label>Stops</label><select name="num-pubs"><option value="5" selected>5 stops</option><option value="10">10 stops</option></select></div>
-                        <div class="form-group"><label>Vibe</label><select name="historic-filter">
-                            <option value="all">All Pubs</option>
-                            <option value="priority">🏛️ Historic</option>
-                            <option value="outdoor">🌳 Garden</option>
-                            <option value="sports">⚽ Sports</option>
-                            <option value="dogfriendly">🐕 Dog Friendly</option>
-                        </select></div>
+                        <div class="form-group">
+                            <label>Stops</label>
+                            <select name="num-pubs">
+                                <option value="3">3 stops</option>
+                                <option value="5" selected>5 stops</option>
+                                <option value="8">8 stops</option>
+                                <option value="10">10 stops</option>
+                                <option value="12">12 stops</option>
+                                <option value="15">15 stops</option>
+                                <option value="20">20 stops</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>Vibe</label>
+                            <select name="historic-filter">
+                                <option value="all">All Pubs</option>
+                                <option value="priority">🏛️ Historic / Traditional</option>
+                                <option value="brewery">🍺 Brewery / Taproom</option>
+                                <option value="outdoor">🌳 Garden / Outdoor</option>
+                                <option value="sports">⚽ Sports Bar</option>
+                                <option value="dogfriendly">🐕 Dog Friendly</option>
+                                <option value="afternoontea">🫖 Afternoon Tea</option>
+                                <option value="happyhour">🍻 Happy Hour</option>
+                                <option value="winebar">🍷 Wine Bar</option>
+                            </select>
+                        </div>
                     </div>
                     <div class="form-row">
-                        <div class="form-group"><label>Max Walk</label><select name="max-distance"><option value="2000">2 km</option><option value="5000" selected>5 km</option><option value="10000">10 km</option></select></div>
-                        <div class="form-group"><label>Start Radius</label><select name="starting-radius"><option value="1000" selected>1 km</option><option value="2000">2 km</option></select></div>
+                        <div class="form-group">
+                            <label>Max Walk</label>
+                            <select name="max-distance">
+                                <option value="2000">2 km</option>
+                                <option value="3000">3 km</option>
+                                <option value="5000" selected>5 km (Medium)</option>
+                                <option value="10000">10 km</option>
+                                <option value="15000">15 km</option>
+                                <option value="20000">20 km (Long)</option>
+                                <option value="50000">50 km</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>Start Radius</label>
+                            <select name="starting-radius">
+                                <option value="500">0.5 km</option>
+                                <option value="1000" selected>1 km</option>
+                                <option value="2000">2 km</option>
+                                <option value="3000">3 km</option>
+                                <option value="5000">5 km</option>
+                            </select>
+                        </div>
                     </div>
                     <div class="form-row">
-                        <div class="form-group"><label>Min Rating</label><select name="min-rating"><option value="4.0" selected>4.0+</option><option value="4.5">4.5+</option></select></div>
+                        <div class="form-group">
+                            <label>Min Rating</label>
+                            <select name="min-rating">
+                                <option value="3.5">3.5+</option>
+                                <option value="4.0" selected>4.0+</option>
+                                <option value="4.5">4.5+</option>
+                            </select>
+                        </div>
                         <div class="form-group"><label>Opening</label><select name="open-now"><option value="false">Any time</option><option value="true">Open Now</option></select></div>
                     </div>
                     <button type="submit" class="search-btn">Find Route</button>
@@ -134,11 +178,14 @@
             new google.maps.places.Autocomplete(document.getElementById('location-input'), { types: ['geocode', 'establishment'] });
         }
 
-        // [FIXED] Toggle Logic
+        // [FIXED] Toggle Logic: Simple toggle of 'collapsed' class
         function toggleSearch() { 
             const wrapper = document.getElementById('search-wrapper');
-            // Toggle the class that hides/shows elements via CSS
-            wrapper.classList.toggle('collapsed');
+            if(wrapper.classList.contains('collapsed')) {
+                wrapper.classList.remove('collapsed');
+            } else {
+                wrapper.classList.add('collapsed');
+            }
         }
 
         async function searchPubs(location, numPubs, historicFilter, maxDistance, minRating, openNow, startingRadius) {
@@ -146,57 +193,54 @@
             document.getElementById('map-container').style.display = 'block';
             
             try {
-                // [FIXED] Distance Logic: Search radius is reduced to 60% of maxDistance to ensure clustering
-                // If maxDistance is 5000m, searching 5000m radius creates potential 10km legs.
+                // Fetch pubs with a radius roughly 60% of max walk to find nearby clusters
                 const searchRadius = Math.min(maxDistance * 0.6, 5000); 
-
                 const center = await geocodeLocation(location);
                 currentCenter = center;
 
-                const pubs = await findPubs(center, searchRadius, historicFilter); // Use tighter radius
+                let pubs = await findPubs(center, searchRadius, historicFilter);
                 
                 // Filter logic
-                const filtered = pubs.filter(p => p.rating >= minRating);
+                pubs = pubs.filter(p => p.rating >= minRating);
                 
-                // Sort by distance from center
-                const sortedByDist = filtered.map(p => ({
-                    ...p,
-                    distance: google.maps.geometry.spherical.computeDistanceBetween(new google.maps.LatLng(center.lat, center.lng), p.geometry.location)
-                })).sort((a,b) => a.distance - b.distance);
-
-                if (sortedByDist.length === 0) throw new Error("No pubs found matching criteria.");
-
-                // Select route candidates
-                const routeCandidates = sortedByDist.slice(0, parseInt(numPubs) * 2); // Take top candidates
+                // [FIXED] Route Logic: Start closest to origin, then strict nearest neighbor
+                if (pubs.length === 0) throw new Error("No pubs found matching criteria.");
                 
-                // [FIXED] Only calculate if we have enough
-                const numToRoute = Math.min(routeCandidates.length, parseInt(numPubs));
-                if (numToRoute < 2) throw new Error("Not enough pubs found for a route.");
-
-                const finalRoutePubs = routeCandidates.slice(0, numToRoute);
+                // Find start pub (closest to user)
+                pubs.forEach(p => p.distFromCenter = google.maps.geometry.spherical.computeDistanceBetween(new google.maps.LatLng(center.lat, center.lng), p.geometry.location));
+                pubs.sort((a,b) => a.distFromCenter - b.distFromCenter);
                 
-                const directions = await calculateDirections(finalRoutePubs);
+                // Take pool of candidates closest to start
+                let pool = pubs.slice(0, parseInt(numPubs) * 3); 
                 
-                if (!directions) throw new Error("Could not calculate walking path.");
-
-                // [FIXED] Validation: Check total distance
-                const totalDist = directions.routes[0].legs.reduce((acc, leg) => acc + leg.distance.value, 0);
+                // Build route: A -> B -> C (strictly nearest neighbor)
+                let route = [pool[0]];
+                let remaining = pool.slice(1);
                 
-                // Allow a small margin (10%) but fail if drastically over
-                if (totalDist > maxDistance * 1.2) {
-                    throw new Error(`Route calculated is ${(totalDist/1000).toFixed(1)}km, which exceeds your ${maxDistance/1000}km limit. Try increasing the limit or reducing stops.`);
+                while(route.length < parseInt(numPubs) && remaining.length > 0) {
+                    const current = route[route.length - 1];
+                    // Find nearest unvisited in 'remaining'
+                    remaining.sort((a,b) => {
+                        const dA = google.maps.geometry.spherical.computeDistanceBetween(current.geometry.location, a.geometry.location);
+                        const dB = google.maps.geometry.spherical.computeDistanceBetween(current.geometry.location, b.geometry.location);
+                        return dA - dB;
+                    });
+                    route.push(remaining.shift());
                 }
 
+                if (route.length < 2) throw new Error("Not enough pubs found for a route.");
+
+                const directions = await calculateDirections(route);
+                if (!directions) throw new Error("Could not calculate walking path.");
+
                 currentRouteData = directions;
-                currentPubs = finalRoutePubs;
+                currentPubs = route;
 
                 document.getElementById('summary-text').textContent = `${currentPubs.length} pubs near ${location}`;
-                
-                // Auto-collapse search on success
                 document.getElementById('search-wrapper').classList.add('collapsed');
-                
                 document.getElementById('results-section').style.display = 'block';
                 displayResults(currentPubs);
+
             } catch (e) { alert(e.message); }
         }
 
@@ -217,7 +261,9 @@
             const token = await user.getIdToken();
             let keyword = 'pub';
             if (filter === 'outdoor') keyword = 'pub with garden';
-            
+            if (filter === 'winebar') keyword = 'wine bar';
+            if (filter === 'afternoontea') keyword = 'afternoon tea';
+
             const res = await fetch('https://pub-crawler-backend.vercel.app/api/search-places', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
@@ -229,9 +275,7 @@
                 rating: p.rating, user_ratings_total: p.userRatingCount,
                 geometry: { location: new google.maps.LatLng(p.location.latitude, p.location.longitude) },
                 editorial_summary: p.editorialSummary?.text,
-                // Pass new fields if available from backend, otherwise generic
-                open_now: p.regularOpeningHours?.openNow,
-                opening_hours: p.regularOpeningHours
+                open_now: p.regularOpeningHours?.openNow
             }));
         }
 
@@ -247,46 +291,37 @@
 
         function displayResults(pubs) {
             directionsRenderer.setDirections(currentRouteData);
-            
-            new google.maps.Marker({
-                position: currentCenter, map: map,
-                icon: 'http://maps.google.com/mapfiles/ms/icons/blue-dot.png', title: 'Search Origin'
-            });
+            new google.maps.Marker({ position: currentCenter, map: map, icon: 'http://maps.google.com/mapfiles/ms/icons/blue-dot.png', title: 'Search Origin' });
 
             const totalDist = currentRouteData.routes[0].legs.reduce((acc, leg) => acc + leg.distance.value, 0);
             const km = (totalDist / 1000).toFixed(1);
-            
+            // [RESTORED] Calorie Logic
+            const drinkCals = pubs.length * 250;
+            const walkCals = Math.round(km * 60);
+
             document.getElementById('route-summary').innerHTML = `
                 <h3>Route Overview</h3>
                 <p><strong>${pubs.length} Stops</strong> • ${km} km total</p>
                 <div style="margin-top:10px; font-size:13px; color:#5f6368; background:#f1f3f4; padding:10px; border-radius:4px;">
-                    <strong>🍺 Fitness Challenge:</strong> Assumed calories based off one drink per stop: ~${pubs.length * 250} cal.
+                    <strong>🍺 Fitness Challenge:</strong><br> 
+                    Estimated Drink Calories: <strong>~${drinkCals}</strong> (1 drink/stop)<br>
+                    Calories Burned Walking: <strong>~${walkCals}</strong>
                 </div>
             `;
 
             const list = document.getElementById('pub-list');
             list.innerHTML = pubs.map((pub, i) => {
-                let distInfo = '';
-                if (i === 0) {
-                     distInfo = `📍 <strong>Start:</strong> ${(currentRouteData.routes[0].legs[0].distance.value/1000).toFixed(1)}km from first leg`;
-                } else {
-                    const leg = currentRouteData.routes[0].legs[i-1];
-                    distInfo = `🚶 <strong>Walk:</strong> ${leg.distance.text} (${leg.duration.text})`;
-                }
-
-                // Global Tag Generation
-                const name = pub.name.toLowerCase();
-                const summary = (pub.editorial_summary || '').toLowerCase();
-                const combined = name + ' ' + summary;
-                let tags = '';
-                if (combined.includes('historic') || combined.includes('old')) tags += `<span class="badge badge-priority">🏛️ Historic</span>`;
-                if (combined.includes('garden') || combined.includes('outdoor')) tags += `<span class="badge badge-outdoor">🌳 Garden</span>`;
-
-                // [ADDED] Rating and Status
-                const ratingHtml = `<span style="color:#fbbc04;">★</span> <strong>${pub.rating || '--'}</strong> <span style="color:#70757a;">(${pub.user_ratings_total || 0})</span>`;
+                let distInfo = i === 0 ? `📍 Start` : `🚶 Walk: ${currentRouteData.routes[0].legs[i-1].distance.text}`;
                 
-                // Mocking open status if not provided by backend strictly
-                const openHtml = `<span class="open-status">Open Now</span>`;
+                // [UPDATED] Expanded Keywords for Better Tagging
+                const txt = (pub.name + (pub.editorial_summary||'')).toLowerCase();
+                let tags = '';
+                if (txt.includes('historic') || txt.includes('old') || txt.includes('victorian')) tags += `<span class="badge badge-priority">🏛️ Historic</span>`;
+                if (txt.includes('garden') || txt.includes('outdoor') || txt.includes('terrace')) tags += `<span class="badge badge-outdoor">🌳 Garden</span>`;
+                if (txt.includes('dog') || txt.includes('pet') || txt.includes('friendly')) tags += `<span class="badge badge-dogfriendly">🐕 Dog Friendly</span>`;
+
+                const ratingHtml = `<span style="color:#fbbc04;">★</span> <strong>${pub.rating || '--'}</strong>`;
+                const openHtml = pub.open_now ? `<span class="open-status">Open Now</span>` : `<span class="closed-status">Closed/Unknown</span>`;
 
                 return `
                 <div class="pub-card" onclick="openDetails(${i})">
@@ -312,24 +347,12 @@
             body.innerHTML = 'Loading...';
             document.getElementById('pub-modal').style.display = 'block';
             
-            // [ADDED] Maps Link
             const mapsLink = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(pub.name + ' ' + pub.vicinity)}&query_place_id=${pub.place_id}`;
-
-            placesService.getDetails({ placeId: pub.place_id, fields: ['reviews', 'rating', 'opening_hours', 'formatted_phone_number'] }, (place) => {
-                let content = '';
-                
-                if (place.opening_hours && place.opening_hours.weekday_text) {
-                    content += `<div style="margin-bottom:12px;"><strong>Hours:</strong><br>${place.opening_hours.weekday_text.join('<br>')}</div>`;
-                }
-                
-                content += `<a href="${mapsLink}" target="_blank" class="btn-link">📍 Open in Google Maps</a>`;
-                
+            placesService.getDetails({ placeId: pub.place_id, fields: ['reviews'] }, (place) => {
+                let content = `<a href="${mapsLink}" target="_blank" class="btn-link">📍 Open in Google Maps</a>`;
                 if (place.reviews) {
                     const sorted = [...place.reviews].sort((a,b) => b.rating - a.rating);
-                    content += `
-                        <div class="review-card" style="border-left:4px solid #137333; margin-top:16px;"><strong>👍 Top Positive:</strong><br>"${sorted[0].text}"</div>
-                        <div class="review-card" style="border-left:4px solid #d93025;"><strong>👎 Critical:</strong><br>"${sorted[sorted.length-1].text}"</div>
-                    `;
+                    content += `<div class="review-card" style="border-left:4px solid #137333; margin-top:16px;"><strong>👍 Top Positive:</strong><br>"${sorted[0].text}"</div>`;
                 }
                 body.innerHTML = content;
             });
@@ -340,7 +363,7 @@
         document.getElementById('search-form').onsubmit = (e) => {
             e.preventDefault();
             const fd = new FormData(e.target);
-            searchPubs(fd.get('location'), fd.get('num-pubs'), fd.get('historic-filter'), fd.get('max-distance'), 4.0, false, fd.get('starting-radius'));
+            searchPubs(fd.get('location'), fd.get('num-pubs'), fd.get('historic-filter'), fd.get('max-distance'), parseFloat(fd.get('min-rating')), fd.get('open-now') === 'true', fd.get('starting-radius'));
         };
     </script>
     <script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-app-compat.js"></script>
