@@ -9,14 +9,13 @@
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body { font-family: 'Google Sans', 'Roboto', Arial, sans-serif; background: #f8f9fa; min-height: 100vh; color: #202124; padding-top: 80px; }
         
-        /* Header */
         .header { position: fixed; top: 0; left: 0; right: 0; background: #fff; padding: 16px 24px; border-bottom: 1px solid #dadce0; display: flex; align-items: center; justify-content: space-between; z-index: 1000; }
         .header-left { display: flex; align-items: center; gap: 16px; }
         .app-title { font-size: 18px; color: #5f6368; font-weight: 400; }
 
         .main-container { max-width: 1000px; margin: 0 auto; padding: 20px; }
 
-        /* Collapsible Search */
+        /* [FIXED] Collapsible Search Form Styles */
         .search-wrapper { background: white; border-radius: 8px; box-shadow: 0 1px 3px rgba(60,64,67,.15); overflow: hidden; margin-bottom: 20px; transition: all 0.3s ease; }
         .search-form { padding: 24px; }
         .search-wrapper.collapsed .search-form { display: none; }
@@ -29,29 +28,27 @@
         .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
         .search-btn { background: #1a73e8; color: white; border: none; padding: 12px; font-size: 14px; font-weight: 500; border-radius: 4px; cursor: pointer; width: 100%; }
 
-        /* Map & Results */
         #map-container { height: 400px; width: 100%; background: #e8eaed; border-radius: 8px; margin-bottom: 20px; display: none; border: 1px solid #dadce0; }
         #map { height: 100%; width: 100%; }
         .results-section { display: none; }
         .route-summary { background: white; padding: 16px; border-radius: 8px; border: 1px solid #dadce0; margin-bottom: 20px; position: relative; }
         .cache-badge { position: absolute; top: 16px; right: 16px; font-size: 11px; color: #1a73e8; background: #e8f0fe; padding: 2px 8px; border-radius: 4px; }
 
-        /* Side-by-Side Pub Card */
-        .pub-card { 
-            background: white; border: 1px solid #dadce0; border-radius: 8px; padding: 16px; margin-bottom: 16px; 
-            display: grid; grid-template-columns: 1fr 300px; gap: 20px; cursor: pointer;
-        }
+        .pub-card { background: white; border: 1px solid #dadce0; border-radius: 8px; padding: 16px; margin-bottom: 16px; display: grid; grid-template-columns: 1fr 300px; gap: 20px; cursor: pointer; }
         @media (max-width: 768px) { .pub-card { grid-template-columns: 1fr; } }
 
         .pub-info h3 { color: #1a73e8; font-size: 16px; font-weight: 500; margin-bottom: 4px; }
         .pub-address { color: #5f6368; font-size: 13px; margin-bottom: 8px; }
         .pub-badges { display: flex; flex-wrap: wrap; gap: 6px; margin: 8px 0; }
-        .badge { padding: 2px 8px; border-radius: 12px; font-size: 11px; font-weight: 500; background: #f1f3f4; color: #5f6368; }
+        .badge { padding: 2px 8px; border-radius: 12px; font-size: 11px; font-weight: 500; }
+        .badge-priority { background: #fef7e0; color: #b06000; }
+        .badge-sports { background: #e6f4ea; color: #137333; }
+        .badge-outdoor { background: #e8f0fe; color: #1967d2; }
+        .badge-dogfriendly { background: #f3e8ff; color: #7e22ce; }
         
         .ai-summary-box { background: #f8f9fa; border-left: 3px solid #1a73e8; padding: 12px; border-radius: 4px; font-size: 13px; line-height: 1.5; }
         .route-leg-info { margin-top: 12px; padding-top: 10px; border-top: 1px dashed #e8eaed; font-size: 13px; color: #1a73e8; }
 
-        /* Modal */
         .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 2000; }
         .modal-content { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background: white; border-radius: 12px; max-width: 600px; width: 95%; max-height: 85vh; overflow-y: auto; }
         .modal-header { padding: 20px; border-bottom: 1px solid #e8eaed; display: flex; justify-content: space-between; align-items: center; position: sticky; top: 0; background: white; }
@@ -121,7 +118,11 @@
             new google.maps.places.Autocomplete(document.getElementById('location-input'), { types: ['geocode', 'establishment'] });
         }
 
-        function toggleSearch() { document.getElementById('search-wrapper').classList.toggle('collapsed'); }
+        // [FIXED] Toggle Search Function
+        function toggleSearch() { 
+            const wrapper = document.getElementById('search-wrapper');
+            wrapper.classList.toggle('collapsed');
+        }
 
         async function searchPubs(location, numPubs, historicFilter, maxDistance, minRating, openNow, startingRadius) {
             document.getElementById('results-section').style.display = 'none';
@@ -188,8 +189,14 @@
             });
             const data = await res.json();
             return data.places.map(p => ({
-                place_id: p.id, name: p.displayName.text, vicinity: p.formattedAddress, 
-                rating: p.rating, user_ratings_total: p.userRatingCount,
+                place_id: p.id, 
+                name: p.displayName.text, 
+                vicinity: p.formattedAddress, 
+                rating: p.rating, 
+                user_ratings_total: p.userRatingCount,
+                goodForWatchingSports: p.goodForWatchingSports || false,
+                outdoorSeating: p.outdoorSeating || false,
+                allowsDogs: p.allowsDogs || false,
                 geometry: { location: new google.maps.LatLng(p.location.latitude, p.location.longitude) },
                 editorial_summary: p.editorialSummary?.text
             }));
@@ -208,7 +215,7 @@
         function displayResults(pubs, isFromCache) {
             directionsRenderer.setDirections(currentRouteData);
             
-            // Add blue marker for starting location
+            // [FIXED] Add Blue Pin for Starting Location
             new google.maps.Marker({
                 position: currentCenter, map: map,
                 icon: 'http://maps.google.com/mapfiles/ms/icons/blue-dot.png',
@@ -224,7 +231,6 @@
             const totalDist = currentRouteData.routes[0].legs.reduce((acc, leg) => acc + leg.distance.value, 0);
             const km = (totalDist / 1000).toFixed(1);
             
-            // Updated Calorie Wording
             summary.innerHTML = `
                 <div class="cache-badge">${isFromCache ? '✓ Local Storage' : '⚡ Fresh Results'}</div>
                 <h3>Route Overview</h3>
@@ -238,6 +244,13 @@
 
         function displayPubList(pubs) {
             const list = document.getElementById('pub-list');
+            
+            // [NEW] Keywords for Global Tags
+            const sportsKeywords = ['sports', 'game', 'screen', 'tv', 'match', 'football', 'rugby'];
+            const outdoorKeywords = ['garden', 'outdoor', 'terrace', 'patio', 'outside', 'canalside', 'sidewalk'];
+            const dogFriendlyKeywords = ['dog friendly', 'dogs welcome', 'pets allowed', 'canine', 'pooch'];
+            const historicKeywords = ['historic', 'victorian', 'traditional', 'heritage', '1848', 'oak paneling'];
+
             list.innerHTML = pubs.map((pub, i) => {
                 let distInfo = '';
                 if (i === 0) {
@@ -248,9 +261,16 @@
                     distInfo = `🚶 <strong>Next Leg:</strong> ${leg.distance.text} (${leg.duration.text})`;
                 }
 
-                // Show all tags regardless of criteria
-                let tags = `<span class="badge">Pub</span>`;
-                if (pub.name.toLowerCase().includes('prince')) tags += `<span class="badge">Historic</span>`;
+                // [FIXED] Global Tag Generation
+                const name = pub.name.toLowerCase();
+                const summary = (pub.editorial_summary || '').toLowerCase();
+                const combined = name + ' ' + summary;
+
+                let tags = '';
+                if (historicKeywords.some(kw => combined.includes(kw))) tags += `<span class="badge badge-priority">🏛️ Historic</span>`;
+                if (sportsKeywords.some(kw => combined.includes(kw)) || pub.goodForWatchingSports) tags += `<span class="badge badge-sports">⚽ Sports</span>`;
+                if (outdoorKeywords.some(kw => combined.includes(kw)) || pub.outdoorSeating) tags += `<span class="badge badge-outdoor">🌳 Garden</span>`;
+                if (dogFriendlyKeywords.some(kw => combined.includes(kw)) || pub.allowsDogs) tags += `<span class="badge badge-dogfriendly">🐕 Dog Friendly</span>`;
 
                 return `
                 <div class="pub-card" onclick="openDetails(${i})">
@@ -276,11 +296,15 @@
             document.getElementById('pub-modal').style.display = 'block';
 
             placesService.getDetails({ placeId: pub.place_id, fields: ['reviews', 'rating'] }, (place) => {
-                const sorted = place.reviews.sort((a,b) => b.rating - a.rating);
-                body.innerHTML = `
-                    <div class="review-card" style="border-left:4px solid #137333;"><strong>👍 Top Positive:</strong><br>"${sorted[0].text}"</div>
-                    <div class="review-card" style="border-left:4px solid #d93025;"><strong>👎 Critical:</strong><br>"${sorted[sorted.length-1].text}"</div>
-                `;
+                if (place.reviews) {
+                    const sorted = [...place.reviews].sort((a,b) => b.rating - a.rating);
+                    body.innerHTML = `
+                        <div class="review-card" style="border-left:4px solid #137333;"><strong>👍 Top Positive:</strong><br>"${sorted[0].text}"</div>
+                        <div class="review-card" style="border-left:4px solid #d93025;"><strong>👎 Critical:</strong><br>"${sorted[sorted.length-1].text}"</div>
+                    `;
+                } else {
+                    body.innerHTML = 'No reviews available.';
+                }
             });
         }
 
