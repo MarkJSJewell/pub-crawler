@@ -188,8 +188,7 @@
             window.insufficientPubs = null;
             
             try {
-                // Include criteria in cache key
-                const cacheKey = `pubs_v3_${btoa(location + historicFilter + maxDistance + numPubs + startingRadius)}`;
+                const cacheKey = `pubs_v4_${btoa(location + historicFilter + maxDistance + numPubs + startingRadius)}`;
                 const cached = localStorage.getItem(cacheKey);
                 let center, pubs, isFromCache = false;
 
@@ -207,30 +206,32 @@
                 if (!isFromCache) {
                     center = await geocodeLocation(location);
                     
-                    // [STRATEGY UPDATE: Sequential Search]
-                    // We run 5 distinct searches to flood the candidate pool.
-                    // We execute them sequentially to avoid rate limiting and ensure full results.
-                    const step = Math.max(maxDistance / 3, 1000); 
-                    const latStep = step / 111000;
-                    const lngStep = step / (111000 * Math.cos(center.lat * Math.PI / 180));
-                    const offsets = [
-                        {lat: 0, lng: 0}, // Center (Start)
-                        {lat: latStep, lng: 0}, // North
-                        {lat: -latStep, lng: 0}, // South
-                        {lat: 0, lng: lngStep}, // East
-                        {lat: 0, lng: -lngStep} // West
+                    // [STRATEGY: CONCENTRIC "RADAR" SEARCH]
+                    // 1. Inner Ring (500m): Ensures immediate neighbors (Heist Bank, Mad Bishop) are found.
+                    // 2. Middle Ring (1.5km): Finds the next layer.
+                    // 3. Outer Ring (3.0km+): Finds distant pubs for long routes.
+                    
+                    const promises = [
+                        findPubs(center, 500, historicFilter),  // Immediate neighbors (Priority)
+                        findPubs(center, 1500, historicFilter), // Local area
+                        findPubs(center, Math.min(maxDistance, 5000), historicFilter) // Wide net
                     ];
                     
-                    let allPubs = [];
-                    // Run searches sequentially
-                    for (const offset of offsets) {
-                        const target = { lat: center.lat + offset.lat, lng: center.lng + offset.lng };
-                        // Search with 1500m radius at each point
-                        const batch = await findPubs(target, 1500, historicFilter);
-                        allPubs = [...allPubs, ...batch];
+                    // Add directional searches if max distance is large (>3km)
+                    if (maxDistance > 3000) {
+                        const step = 2000; 
+                        const latStep = step / 111000;
+                        const lngStep = step / (111000 * Math.cos(center.lat * Math.PI / 180));
+                        promises.push(findPubs({lat: center.lat + latStep, lng: center.lng}, 1500, historicFilter));
+                        promises.push(findPubs({lat: center.lat - latStep, lng: center.lng}, 1500, historicFilter));
+                        promises.push(findPubs({lat: center.lat, lng: center.lng + lngStep}, 1500, historicFilter));
+                        promises.push(findPubs({lat: center.lat, lng: center.lng - lngStep}, 1500, historicFilter));
                     }
                     
-                    // Deduplicate
+                    const results = await Promise.all(promises);
+                    const allPubs = results.flat();
+                    
+                    // Deduplicate based on Place ID
                     const pubMap = new Map();
                     allPubs.forEach(p => pubMap.set(p.place_id, p));
                     pubs = Array.from(pubMap.values());
@@ -316,8 +317,9 @@
             const user = firebase.auth().currentUser;
             const token = await user.getIdToken();
             
-            // [FIX] Enhanced Keywords
-            let keyword = 'pub OR bar OR gastropub OR inn';
+            // [FIX] Broader Keywords to catch "Bars" like Heist Bank and "Taverns"
+            let keyword = 'pub OR bar OR gastropub OR inn OR tavern OR taproom OR lounge';
+            
             if (filter === 'outdoor') keyword = 'pub with garden OR outdoor seating';
             if (filter === 'winebar') keyword = 'wine bar';
             if (filter === 'afternoontea') keyword = 'afternoon tea';
@@ -473,6 +475,7 @@
             }).join('');
         }
 
+        // [FIX] Modal Content
         function openDetails(idx) {
             const pub = currentPubs[idx];
             document.getElementById('modal-title').textContent = pub.name;
@@ -480,10 +483,10 @@
             body.innerHTML = 'Loading details...';
             document.getElementById('pub-modal').style.display = 'block';
             
-            const mapsUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(pub.name)}&query_place_id=${pub.place_id}`;
+            const mapsLink = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(pub.name)}&query_place_id=${pub.place_id}`;
             const btnHtml = `
                 <div style="margin-bottom:16px; text-align:center;">
-                    <a href="${mapsUrl}" target="_blank" class="action-btn primary" style="display:inline-block; text-decoration:none; padding:12px 24px; font-size:14px;">
+                    <a href="${mapsLink}" target="_blank" class="action-btn primary" style="display:inline-block; text-decoration:none; padding:10px 20px;">
                         📍 Open in Google Maps
                     </a>
                 </div>`;
@@ -501,8 +504,8 @@
                             <div style="font-style:italic;">"${best.text}"</div>
                         </div>`;
                     
-                    // [FIX] Always show lowest rated review if it is distinct from best
-                    if (worst.text && worst !== best) {
+                    // Show lowest rated review regardless of score, unless it's the SAME as best
+                    if (worst !== best) {
                         reviewsHtml += `
                             <div class="review-card" style="border-left:4px solid #d93025; margin-top:12px;">
                                 <div style="font-weight:bold; color:#d93025; margin-bottom:4px;">👎 Lowest Rated (${worst.rating}★)</div>
