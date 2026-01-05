@@ -188,8 +188,8 @@
             window.insufficientPubs = null;
             
             try {
-                // Cache key includes distance to ensure we re-fetch if distance changes
-                const cacheKey = `pubs_v2_${btoa(location + historicFilter + maxDistance + numPubs + startingRadius)}`;
+                // Include criteria in cache key
+                const cacheKey = `pubs_v3_${btoa(location + historicFilter + maxDistance + numPubs + startingRadius)}`;
                 const cached = localStorage.getItem(cacheKey);
                 let center, pubs, isFromCache = false;
 
@@ -207,35 +207,28 @@
                 if (!isFromCache) {
                     center = await geocodeLocation(location);
                     
-                    // [SMART GRID SEARCH] 
-                    // To find pubs "further down the route" (e.g. 5km away), we must search a wider area.
-                    // We generate a 3x3 grid around the start point based on the Max Walk distance.
-                    // This ensures pubs at Stop 17, 18, 19 are actually found.
-                    
-                    const step = Math.max(maxDistance / 3, 1000); // Grid step size
-                    // Convert meters to lat/lng (approx for London)
+                    // [STRATEGY UPDATE: Sequential Search]
+                    // We run 5 distinct searches to flood the candidate pool.
+                    // We execute them sequentially to avoid rate limiting and ensure full results.
+                    const step = Math.max(maxDistance / 3, 1000); 
                     const latStep = step / 111000;
                     const lngStep = step / (111000 * Math.cos(center.lat * Math.PI / 180));
-                    
                     const offsets = [
-                        {lat: 0, lng: 0}, // Center
-                        {lat: latStep, lng: 0}, {lat: -latStep, lng: 0}, // N, S
-                        {lat: 0, lng: lngStep}, {lat: 0, lng: -lngStep}, // E, W
-                        {lat: latStep, lng: lngStep}, {lat: latStep, lng: -lngStep}, // NE, NW
-                        {lat: -latStep, lng: lngStep}, {lat: -latStep, lng: -lngStep} // SE, SW
+                        {lat: 0, lng: 0}, // Center (Start)
+                        {lat: latStep, lng: 0}, // North
+                        {lat: -latStep, lng: 0}, // South
+                        {lat: 0, lng: lngStep}, // East
+                        {lat: 0, lng: -lngStep} // West
                     ];
                     
-                    const searchRadius = Math.min(step, 3000); // Radius for each grid point
-                    
-                    const promises = offsets.map(offset => 
-                        findPubs({
-                            lat: center.lat + offset.lat, 
-                            lng: center.lng + offset.lng
-                        }, searchRadius, historicFilter)
-                    );
-                    
-                    const results = await Promise.all(promises);
-                    const allPubs = results.flat();
+                    let allPubs = [];
+                    // Run searches sequentially
+                    for (const offset of offsets) {
+                        const target = { lat: center.lat + offset.lat, lng: center.lng + offset.lng };
+                        // Search with 1500m radius at each point
+                        const batch = await findPubs(target, 1500, historicFilter);
+                        allPubs = [...allPubs, ...batch];
+                    }
                     
                     // Deduplicate
                     const pubMap = new Map();
@@ -254,6 +247,7 @@
                 filtered.forEach(p => p.distFromCenter = google.maps.geometry.spherical.computeDistanceBetween(new google.maps.LatLng(center.lat, center.lng), p.geometry.location));
                 filtered.sort((a,b) => a.distFromCenter - b.distFromCenter);
                 
+                // Prioritize Start
                 let startPub = filtered.find(p => p.distFromCenter <= startR);
                 if (!startPub) startPub = filtered[0];
 
@@ -264,6 +258,7 @@
                 
                 while(route.length < parseInt(numPubs) && remaining.length > 0) {
                     const current = route[route.length - 1];
+                    // Strict Nearest Neighbor
                     remaining.sort((a,b) => {
                         const dA = google.maps.geometry.spherical.computeDistanceBetween(current.geometry.location, a.geometry.location);
                         const dB = google.maps.geometry.spherical.computeDistanceBetween(current.geometry.location, b.geometry.location);
@@ -273,8 +268,8 @@
                     const next = remaining[0];
                     const distToNext = google.maps.geometry.spherical.computeDistanceBetween(current.geometry.location, next.geometry.location);
                     
-                    // 1.35x Multiplier for Walking Distance approximation
-                    const estimatedWalk = distToNext * 1.35;
+                    // [FIX] 1.4x Multiplier for Walking Distance
+                    const estimatedWalk = distToNext * 1.4;
 
                     if (currentRouteDist + estimatedWalk > maxDistance) {
                         hitLimit = true;
@@ -321,9 +316,8 @@
             const user = firebase.auth().currentUser;
             const token = await user.getIdToken();
             
-            // [FIX] Broader keywords to catch "Gastropubs" (like The Pelican) and "Inns"
+            // [FIX] Enhanced Keywords
             let keyword = 'pub OR bar OR gastropub OR inn';
-            
             if (filter === 'outdoor') keyword = 'pub with garden OR outdoor seating';
             if (filter === 'winebar') keyword = 'wine bar';
             if (filter === 'afternoontea') keyword = 'afternoon tea';
@@ -370,6 +364,7 @@
 
         function displayResults(pubs, isFromCache) {
             directionsRenderer.setDirections(currentRouteData);
+            
             const bounds = new google.maps.LatLngBounds();
             bounds.extend(currentCenter);
             
@@ -485,10 +480,10 @@
             body.innerHTML = 'Loading details...';
             document.getElementById('pub-modal').style.display = 'block';
             
-            const mapsLink = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(pub.name)}&query_place_id=${pub.place_id}`;
+            const mapsUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(pub.name)}&query_place_id=${pub.place_id}`;
             const btnHtml = `
                 <div style="margin-bottom:16px; text-align:center;">
-                    <a href="${mapsLink}" target="_blank" class="action-btn primary" style="display:inline-block; text-decoration:none; padding:10px 20px;">
+                    <a href="${mapsUrl}" target="_blank" class="action-btn primary" style="display:inline-block; text-decoration:none; padding:12px 24px; font-size:14px;">
                         📍 Open in Google Maps
                     </a>
                 </div>`;
@@ -506,7 +501,8 @@
                             <div style="font-style:italic;">"${best.text}"</div>
                         </div>`;
                     
-                    if (worst !== best) {
+                    // [FIX] Always show lowest rated review if it is distinct from best
+                    if (worst.text && worst !== best) {
                         reviewsHtml += `
                             <div class="review-card" style="border-left:4px solid #d93025; margin-top:12px;">
                                 <div style="font-weight:bold; color:#d93025; margin-bottom:4px;">👎 Lowest Rated (${worst.rating}★)</div>
