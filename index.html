@@ -188,8 +188,8 @@
             window.insufficientPubs = null;
             
             try {
-                // Cache key updated to force fresh search with new logic
-                const cacheKey = `pubs_v5_${btoa(location + historicFilter + maxDistance + numPubs + startingRadius)}`;
+                // Cache key V6
+                const cacheKey = `pubs_v6_${btoa(location + historicFilter + maxDistance + numPubs + startingRadius)}`;
                 const cached = localStorage.getItem(cacheKey);
                 let center, pubs, isFromCache = false;
 
@@ -207,47 +207,46 @@
                 if (!isFromCache) {
                     center = await geocodeLocation(location);
                     
-                    // [HIGH-DENSITY SCANNER STRATEGY]
-                    // Instead of searching wide, we search many small circles (500m radius).
-                    // This forces Google to return the "Top 20" for THAT specific block,
-                    // revealing local gems that would be hidden in a 2km search.
+                    // [STRATEGY: FIXED DENSITY GRID]
+                    // Instead of scaling grid with distance, we use FIXED 800m steps.
+                    // Overlapping 1000m scans ensures NO GAPS.
+                    // This forces Google to yield local results at every step.
                     
                     const promises = [];
                     
-                    // 1. Center (Start)
+                    // 1. Center
                     promises.push(findPubs(center, 500, historicFilter));
                     
-                    // 2. Inner Ring: 8 points at 500m distance
+                    // 2. Fixed Inner Ring (800m distance)
                     for (let i = 0; i < 8; i++) {
                         const angle = (i * 45) * (Math.PI / 180);
-                        const latOffset = (500 / 111000) * Math.cos(angle);
-                        const lngOffset = (500 / (111000 * Math.cos(center.lat * Math.PI / 180))) * Math.sin(angle);
-                        promises.push(findPubs({ lat: center.lat + latOffset, lng: center.lng + lngOffset }, 500, historicFilter));
+                        const latOffset = (800 / 111000) * Math.cos(angle);
+                        const lngOffset = (800 / (111000 * Math.cos(center.lat * Math.PI / 180))) * Math.sin(angle);
+                        promises.push(findPubs({ lat: center.lat + latOffset, lng: center.lng + lngOffset }, 1000, historicFilter));
                     }
                     
-                    // 3. Middle Ring: 8 points at 1000m distance
+                    // 3. Fixed Outer Ring (1600m distance) - Covers the 1.5km "Gap"
                     for (let i = 0; i < 8; i++) {
                         const angle = (i * 45) * (Math.PI / 180);
-                        const latOffset = (1000 / 111000) * Math.cos(angle);
-                        const lngOffset = (1000 / (111000 * Math.cos(center.lat * Math.PI / 180))) * Math.sin(angle);
-                        promises.push(findPubs({ lat: center.lat + latOffset, lng: center.lng + lngOffset }, 500, historicFilter));
+                        const latOffset = (1600 / 111000) * Math.cos(angle);
+                        const lngOffset = (1600 / (111000 * Math.cos(center.lat * Math.PI / 180))) * Math.sin(angle);
+                        promises.push(findPubs({ lat: center.lat + latOffset, lng: center.lng + lngOffset }, 1000, historicFilter));
                     }
-
-                    // 4. Outer Ring: 8 points at 1500m distance (Only if max walk > 3km)
+                    
+                    // 4. Far Ring (2400m) only if Long Walk selected
                     if (maxDistance > 3000) {
-                        for (let i = 0; i < 8; i++) {
-                            const angle = (i * 45) * (Math.PI / 180);
-                            const latOffset = (1500 / 111000) * Math.cos(angle);
-                            const lngOffset = (1500 / (111000 * Math.cos(center.lat * Math.PI / 180))) * Math.sin(angle);
-                            promises.push(findPubs({ lat: center.lat + latOffset, lng: center.lng + lngOffset }, 500, historicFilter));
+                        for (let i = 0; i < 4; i++) { // Cardinal points only to save API calls
+                            const angle = (i * 90) * (Math.PI / 180);
+                            const latOffset = (2400 / 111000) * Math.cos(angle);
+                            const lngOffset = (2400 / (111000 * Math.cos(center.lat * Math.PI / 180))) * Math.sin(angle);
+                            promises.push(findPubs({ lat: center.lat + latOffset, lng: center.lng + lngOffset }, 1000, historicFilter));
                         }
                     }
                     
-                    // Run all searches in parallel
                     const results = await Promise.all(promises);
                     const allPubs = results.flat();
                     
-                    // Deduplicate by Place ID
+                    // Deduplicate
                     const pubMap = new Map();
                     allPubs.forEach(p => pubMap.set(p.place_id, p));
                     pubs = Array.from(pubMap.values());
@@ -283,6 +282,7 @@
                     const next = remaining[0];
                     const distToNext = google.maps.geometry.spherical.computeDistanceBetween(current.geometry.location, next.geometry.location);
                     
+                    // 1.4x Multiplier
                     const estimatedWalk = distToNext * 1.4;
 
                     if (currentRouteDist + estimatedWalk > maxDistance) {
@@ -493,10 +493,10 @@
             body.innerHTML = 'Loading details...';
             document.getElementById('pub-modal').style.display = 'block';
             
-            const mapsUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(pub.name)}&query_place_id=${pub.place_id}`;
+            const mapsLink = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(pub.name)}&query_place_id=${pub.place_id}`;
             const btnHtml = `
                 <div style="margin-bottom:16px; text-align:center;">
-                    <a href="${mapsUrl}" target="_blank" class="action-btn primary" style="display:inline-block; text-decoration:none; padding:10px 20px;">
+                    <a href="${mapsLink}" target="_blank" class="action-btn primary" style="display:inline-block; text-decoration:none; padding:10px 20px;">
                         📍 Open in Google Maps
                     </a>
                 </div>`;
@@ -514,11 +514,13 @@
                             <div style="font-style:italic;">"${best.text}"</div>
                         </div>`;
                     
-                    reviewsHtml += `
-                        <div class="review-card" style="border-left:4px solid #d93025; margin-top:12px;">
-                            <div style="font-weight:bold; color:#d93025; margin-bottom:4px;">👎 Lowest Rated (${worst.rating}★)</div>
-                            <div style="font-style:italic;">"${worst.text}"</div>
-                        </div>`;
+                    if (worst !== best) {
+                        reviewsHtml += `
+                            <div class="review-card" style="border-left:4px solid #d93025; margin-top:12px;">
+                                <div style="font-weight:bold; color:#d93025; margin-bottom:4px;">👎 Lowest Rated (${worst.rating}★)</div>
+                                <div style="font-style:italic;">"${worst.text}"</div>
+                            </div>`;
+                    }
                 } else {
                     reviewsHtml = '<p style="text-align:center; color:#666;">No written reviews available.</p>';
                 }
