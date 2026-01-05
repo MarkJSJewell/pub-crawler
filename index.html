@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Pub Crawl Planner v4</title>
+    <title>Pub Crawl Planner v5 (Circular)</title>
     <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🍺</text></svg>">
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -86,7 +86,7 @@
     <div class="header">
         <div class="header-left">
             <span style="font-size: 22px; margin-right: 8px;">🍺</span>
-            <div class="app-title">Pub Crawl Planner v4</div>
+            <div class="app-title">Pub Crawl Planner v5</div>
         </div>
         <div class="header-right">
             <div id="api-status" style="font-size: 13px; color: #5f6368; margin-right: 15px;">Connecting...</div>
@@ -132,8 +132,9 @@
                         <div class="form-group">
                             <label>Routing Strategy</label>
                             <select name="sort-preference" style="border: 2px solid #1a73e8; background: #e8f0fe; color: #1a73e8; font-weight: 500;">
-                                <option value="distance">🚶 Shortest Walk (Efficient)</option>
-                                <option value="popularity">🌟 Most Popular (Best Reviews)</option>
+                                <option value="circular">🔄 Circular / Return to Start</option>
+                                <option value="distance">🚶 Shortest Walk (Linear)</option>
+                                <option value="popularity">🌟 Most Popular (Famous)</option>
                             </select>
                         </div>
                         <div class="form-group">
@@ -175,6 +176,7 @@
         let currentPubs = [];
         let currentRouteData = null;
         let infoWindow = null;
+        let markers = []; 
 
         function initializeGoogleMaps() {
             map = new google.maps.Map(document.getElementById('map'), { zoom: 13, center: { lat: 51.5, lng: -0.1 }, mapTypeControl: false });
@@ -193,15 +195,21 @@
             wrapper.classList.toggle('collapsed');
         }
 
+        function clearMarkers() {
+            for (let i = 0; i < markers.length; i++) {
+                markers[i].setMap(null);
+            }
+            markers = [];
+        }
+
         async function searchPubs(location, numPubs, historicFilter, maxDistance, minRating, openNow, startingRadius, sortPreference) {
             document.getElementById('results-section').style.display = 'none';
             document.getElementById('map-container').style.display = 'block';
-            document.getElementById('risk-analysis-container').innerHTML = ''; // Clear previous risks
+            document.getElementById('risk-analysis-container').innerHTML = ''; 
             window.insufficientPubs = null;
             
             try {
-                // Include criteria in cache key
-                const cacheKey = `pubs_v4_${btoa(location + historicFilter + maxDistance + numPubs + startingRadius)}`;
+                const cacheKey = `pubs_v5_${btoa(location + historicFilter + maxDistance + numPubs + startingRadius)}`;
                 const cached = localStorage.getItem(cacheKey);
                 let center, pubs, isFromCache = false;
 
@@ -219,7 +227,6 @@
                 if (!isFromCache) {
                     center = await geocodeLocation(location);
                     
-                    // Flood search
                     const step = Math.max(maxDistance / 3, 1000); 
                     const latStep = step / 111000;
                     const lngStep = step / (111000 * Math.cos(center.lat * Math.PI / 180));
@@ -241,11 +248,18 @@
 
                 currentCenter = center;
                 let filtered = pubs.filter(p => p.rating >= minRating);
-                if (filtered.length === 0) throw new Error("No pubs found matching criteria.");
                 
-                // --- ROUTE BUILDER ---
+                // --- NEW: STRATEGY LOGIC ---
                 const startR = parseInt(startingRadius);
                 filtered.forEach(p => p.distFromCenter = google.maps.geometry.spherical.computeDistanceBetween(new google.maps.LatLng(center.lat, center.lng), p.geometry.location));
+                
+                // If "Circular", STRICTLY enforce the Start Radius now
+                if (sortPreference === 'circular') {
+                    filtered = filtered.filter(p => p.distFromCenter <= startR);
+                }
+
+                if (filtered.length === 0) throw new Error("No pubs found matching criteria.");
+
                 filtered.sort((a,b) => a.distFromCenter - b.distFromCenter);
                 
                 let startPub = filtered.find(p => p.distFromCenter <= startR);
@@ -255,35 +269,49 @@
                 let currentRouteDist = 0;
                 let remaining = filtered.filter(p => p.place_id !== startPub.place_id);
                 let hitLimit = false;
+                const totalStops = parseInt(numPubs);
                 
-                while(route.length < parseInt(numPubs) && remaining.length > 0) {
+                while(route.length < totalStops && remaining.length > 0) {
                     const current = route[route.length - 1];
-                    
-                    // STRATEGY: Get candidates within a walkable cluster (e.g., 1.2km)
-                    // We don't want to jump 5km just because a place is popular.
                     const MAX_JUMP_METERS = 1200; 
+                    
+                    // Find walk-able candidates
                     let candidates = remaining.filter(p => {
                         const d = google.maps.geometry.spherical.computeDistanceBetween(current.geometry.location, p.geometry.location);
                         return d <= MAX_JUMP_METERS;
                     });
-
-                    // If no close candidates, look slightly further (emergency fallback)
+                    
                     if (candidates.length === 0) {
+                        // Emergency expansion if stuck
                         candidates = remaining.filter(p => {
                             const d = google.maps.geometry.spherical.computeDistanceBetween(current.geometry.location, p.geometry.location);
-                            return d <= MAX_JUMP_METERS * 2;
+                            return d <= MAX_JUMP_METERS * 2.5;
                         });
                     }
-
-                    // Fallback to everyone if we are stuck (nearest neighbor fallback)
                     if (candidates.length === 0) candidates = remaining;
 
-                    // SORT CANDIDATES
+                    // --- SORTING LOGIC ---
                     if (sortPreference === 'popularity') {
-                        // Sort by Number of Ratings (Crowd Wisdom)
                         candidates.sort((a,b) => (b.user_ratings_total || 0) - (a.user_ratings_total || 0));
-                    } else {
-                        // Sort by Distance (Efficiency)
+                    } 
+                    else if (sortPreference === 'circular') {
+                        // "Boomerang Logic"
+                        const isReturningHome = route.length >= (totalStops / 2);
+                        
+                        candidates.sort((a,b) => {
+                            if (isReturningHome) {
+                                // Priority: Proximity to START
+                                return a.distFromCenter - b.distFromCenter;
+                            } else {
+                                // Priority: Proximity to CURRENT (Efficiency/Outward)
+                                const dCurA = google.maps.geometry.spherical.computeDistanceBetween(current.geometry.location, a.geometry.location);
+                                const dCurB = google.maps.geometry.spherical.computeDistanceBetween(current.geometry.location, b.geometry.location);
+                                return dCurA - dCurB;
+                            }
+                        });
+                    }
+                    else {
+                        // Default: Shortest Walk
                         candidates.sort((a,b) => {
                             const dA = google.maps.geometry.spherical.computeDistanceBetween(current.geometry.location, a.geometry.location);
                             const dB = google.maps.geometry.spherical.computeDistanceBetween(current.geometry.location, b.geometry.location);
@@ -302,7 +330,6 @@
                     
                     route.push(next);
                     currentRouteDist += estimatedWalk;
-                    // Remove next from remaining
                     remaining = remaining.filter(p => p.place_id !== next.place_id);
                 }
 
@@ -321,41 +348,36 @@
                 document.getElementById('results-section').style.display = 'block';
                 
                 displayResults(currentPubs, isFromCache);
-                analyzeRouteRisks(currentPubs); // <--- NEW RISK ENGINE
+                analyzeRouteRisks(currentPubs);
 
             } catch (e) { alert(e.message); }
         }
 
-        // --- NEW RISK ENGINE ---
         function analyzeRouteRisks(pubs) {
             const riskContainer = document.getElementById('risk-analysis-container');
             const risks = [];
             
-            // 1. Late Route Warning
             if (pubs.length >= 10) {
-                risks.push(`<strong>🕒 Pacing Alert:</strong> You have ${pubs.length} stops. Stops 10-20 often open later (12pm or 4pm). Ensure you start this route after 11:00 AM to avoid locked doors.`);
+                risks.push(`<strong>🕒 Pacing Alert:</strong> You have ${pubs.length} stops. Stops 10-20 often open later. Ensure you start after 11:00 AM.`);
             }
 
-            // 2. Vibe Mismatch Check (Keywords)
             const restaurantKeywords = ['thai', 'indian', 'chinese', 'curry', 'sushi', 'restaurant', 'kitchen'];
             let restaurantCount = 0;
             pubs.forEach((p, i) => {
                 const name = (p.name + " " + (p.editorial_summary || "")).toLowerCase();
                 if (restaurantKeywords.some(k => name.includes(k))) {
                     restaurantCount++;
-                    if (restaurantCount === 1) { // Only warn once
-                         risks.push(`<strong>🍽️ Vibe Check:</strong> Stop #${i+1} (${p.name}) might be more of a restaurant than a pub. Check if they allow casual drinking.`);
+                    if (restaurantCount === 1) { 
+                         risks.push(`<strong>🍽️ Vibe Check:</strong> Stop #${i+1} (${p.name}) might be a restaurant. Check if they allow casual drinking.`);
                     }
                 }
             });
 
-            // 3. Opening Hours "Gap" (Heuristic)
-            // If we found a "Club" or "Late Bar" early in the route
             const lateKeywords = ['nightclub', 'late bar', 'lounge'];
             pubs.slice(0, 3).forEach((p, i) => {
                 const name = (p.name).toLowerCase();
                 if (lateKeywords.some(k => name.includes(k))) {
-                    risks.push(`<strong>🔒 Opening Risk:</strong> Stop #${i+1} (${p.name}) looks like a late-night venue. It might not be open if you start early.`);
+                    risks.push(`<strong>🔒 Opening Risk:</strong> Stop #${i+1} (${p.name}) looks like a late-night venue.`);
                 }
             });
 
@@ -433,6 +455,8 @@
         }
 
         function displayResults(pubs, isFromCache) {
+            clearMarkers();
+
             directionsRenderer.setDirections(currentRouteData);
             
             const bounds = new google.maps.LatLngBounds();
@@ -445,6 +469,8 @@
                     label: { text: (i + 1).toString(), color: "white", fontWeight: "bold" },
                     title: p.name, zIndex: 100 + i
                 });
+                markers.push(marker);
+
                 const mapsUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(p.name)}&query_place_id=${p.place_id}`;
                 marker.addListener('click', () => {
                     infoWindow.setContent(`
@@ -462,11 +488,12 @@
             });
             map.fitBounds(bounds);
 
-            new google.maps.Marker({
+            const originMarker = new google.maps.Marker({
                 position: currentCenter, map: map,
                 icon: 'http://maps.google.com/mapfiles/ms/icons/blue-dot.png', 
                 title: 'Search Origin'
             });
+            markers.push(originMarker);
 
             const totalDist = currentRouteData.routes[0].legs.reduce((acc, leg) => acc + leg.distance.value, 0);
             const km = (totalDist / 1000).toFixed(1);
