@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Pub Crawl Planner v6</title>
+    <title>Pub Crawl Planner v7</title>
     <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🍺</text></svg>">
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -86,7 +86,7 @@
     <div class="header">
         <div class="header-left">
             <span style="font-size: 22px; margin-right: 8px;">🍺</span>
-            <div class="app-title">Pub Crawl Planner v6</div>
+            <div class="app-title">Pub Crawl Planner v7</div>
         </div>
         <div class="header-right">
             <div id="api-status" style="font-size: 13px; color: #5f6368; margin-right: 15px;">Connecting...</div>
@@ -206,10 +206,10 @@
             document.getElementById('map-container').style.display = 'block';
             document.getElementById('risk-analysis-container').innerHTML = ''; 
             window.insufficientPubs = null;
-            const startingRadius = 1000; // Hardcoded default as per user request
+            const startingRadius = 1000;
             
             try {
-                const cacheKey = `pubs_v6_${btoa(location + historicFilter + maxDistance + numPubs + startingRadius)}`;
+                const cacheKey = `pubs_v7_${btoa(location + historicFilter + maxDistance + numPubs + startingRadius)}`;
                 const cached = localStorage.getItem(cacheKey);
                 let center, pubs, isFromCache = false;
 
@@ -251,7 +251,6 @@
                 
                 filtered.forEach(p => p.distFromCenter = google.maps.geometry.spherical.computeDistanceBetween(new google.maps.LatLng(center.lat, center.lng), p.geometry.location));
                 
-                // For Circular, ensure we start in the zone
                 if (sortPreference === 'circular') {
                     filtered = filtered.filter(p => p.distFromCenter <= startingRadius);
                 }
@@ -294,14 +293,11 @@
                         const isReturning = route.length >= (totalStops / 2);
                         
                         if (stopsToGo <= 3) {
-                             // FINAL APPROACH: Strictly prioritize getting closer to Start
                              candidates.sort((a,b) => a.distFromCenter - b.distFromCenter);
                         }
                         else if (isReturning) {
-                             // WIDE ARC: Prioritize "Further" first to keep circle wide
                              candidates.sort((a,b) => b.distFromCenter - a.distFromCenter);
                         } else {
-                             // OUTWARD: Nearest Neighbor logic
                              candidates.sort((a,b) => {
                                 const dA = google.maps.geometry.spherical.computeDistanceBetween(current.geometry.location, a.geometry.location);
                                 const dB = google.maps.geometry.spherical.computeDistanceBetween(current.geometry.location, b.geometry.location);
@@ -310,7 +306,6 @@
                         }
                     }
                     else {
-                        // Shortest Walk
                         candidates.sort((a,b) => {
                             const dA = google.maps.geometry.spherical.computeDistanceBetween(current.geometry.location, a.geometry.location);
                             const dB = google.maps.geometry.spherical.computeDistanceBetween(current.geometry.location, b.geometry.location);
@@ -356,15 +351,6 @@
             const riskContainer = document.getElementById('risk-analysis-container');
             const risks = [];
             
-            // --- UPDATED PACING ALERT (Late Opening Only) ---
-            const lateOpeners = pubs.filter(p => {
-                // If we have hours data, check for late opening (e.g. 5pm)
-                // Note: Actual detailed parsing requires 'opening_hours' details not always present in list view
-                // We use keyword heuristics here or fallback
-                return false; // Disabled 11am check as per request.
-            });
-
-            // Replaced with generic "Late Venue" keyword check
             const lateKeywords = ['nightclub', 'late bar', 'lounge'];
             pubs.slice(0, 5).forEach((p, i) => {
                 const name = (p.name).toLowerCase();
@@ -425,8 +411,6 @@
                 body: JSON.stringify({ location: `${center.lat},${center.lng}`, radius, keyword })
             });
             const data = await res.json();
-            
-            // --- UPDATED MAPPING TO CHECK BOTH API VERSIONS ---
             return data.places.map(p => ({
                 place_id: p.id, name: p.displayName.text, vicinity: p.formattedAddress, 
                 rating: p.rating, user_ratings_total: p.userRatingCount,
@@ -514,7 +498,6 @@
             
             const mapsUrl = `https://www.google.com/maps/dir/?api=1&origin=${encodeURIComponent(pubs[0].vicinity)}&destination=${encodeURIComponent(pubs[pubs.length-1].vicinity)}&travelmode=walking`;
 
-            // --- RE-INTRODUCED INSUFFICIENT PUBS WARNING ---
             let warningHTML = '';
             if (window.insufficientPubs) {
                 warningHTML = `<div class="warning-box">⚠️ <strong>Route Shortened:</strong> We found ${window.insufficientPubs.found} pubs (you asked for ${window.insufficientPubs.requested}). Adding more would exceed your Max Walk distance.</div>`;
@@ -557,9 +540,11 @@
 
                 const ratingHtml = `<span style="color:#fbbc04;">★</span> <strong>${pub.rating || '--'}</strong> <span style="font-size:11px; color:#70757a;">(${pub.user_ratings_total || 0})</span>`;
                 
-                let openHtml = '<span class="unknown-status">Check Hours</span>';
+                // --- FIXED OPENING HOURS DISPLAY ---
+                let openHtml = '';
                 if (pub.open_now === true) openHtml = '<span class="open-status">Open Now</span>';
-                if (pub.open_now === false) openHtml = '<span class="closed-status">Closed</span>';
+                else if (pub.open_now === false) openHtml = '<span class="closed-status">Closed</span>';
+                else openHtml = '<span class="unknown-status">Check Hours</span>';
 
                 return `
                 <div class="pub-card" onclick="openDetails(${i})">
@@ -591,6 +576,9 @@
                     <a href="${mapsUrl}" target="_blank" class="action-btn primary" style="display:inline-block; text-decoration:none; padding:12px 24px; font-size:14px;">
                         📍 Open in Google Maps
                     </a>
+                </div>
+                <div style="font-size:12px; color:#555; text-align:center; margin-bottom:12px; font-style:italic;">
+                    Note: Ratings based on the top 5 most helpful reviews provided by Google.
                 </div>`;
 
             placesService.getDetails({ placeId: pub.place_id, fields: ['reviews', 'rating'] }, (place, status) => {
@@ -607,7 +595,6 @@
                         </div>`;
                     
                     if (worst.text && worst !== best) {
-                        // --- UPDATED LABEL FOR CLARITY ---
                         reviewsHtml += `
                             <div class="review-card" style="border-left:4px solid #d93025; margin-top:12px;">
                                 <div style="font-weight:bold; color:#d93025; margin-bottom:4px;">👎 Lowest (of top 5 reviews) (${worst.rating}★)</div>
@@ -627,7 +614,6 @@
         document.getElementById('search-form').onsubmit = (e) => {
             e.preventDefault();
             const fd = new FormData(e.target);
-            // Updated arguments (removed starting radius)
             searchPubs(fd.get('location'), fd.get('num-pubs'), fd.get('historic-filter'), fd.get('max-distance'), parseFloat(fd.get('min-rating')), fd.get('open-now') === 'true', fd.get('sort-preference'));
         };
     </script>
