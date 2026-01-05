@@ -72,7 +72,7 @@
         .modal-header { padding: 20px; border-bottom: 1px solid #e8eaed; display: flex; justify-content: space-between; align-items: center; position: sticky; top: 0; background: white; }
         .modal-body { padding: 20px; }
         .review-card { background: #f8f9fa; padding: 12px; border-radius: 8px; margin-bottom: 12px; border: 1px solid #e8eaed; }
-        .btn-link { display: inline-block; padding: 8px 16px; background: #e8f0fe; color: #1967d2; text-decoration: none; border-radius: 4px; font-weight: 500; font-size: 13px; margin-top: 8px; }
+        .btn-link { display: inline-block; padding: 8px 16px; background: #e8f0fe; color: #1967d2; text-decoration: none; border-radius: 4px; font-weight: 500; font-size: 13px; margin-top: 8px; width: 100%; text-align: center; }
         
         .warning-box { background: #fef7e0; border-left: 4px solid #fbbc04; padding: 10px; margin-top: 10px; font-size: 13px; color: #5f6368; border-radius: 4px; }
     </style>
@@ -138,7 +138,7 @@
                         </div>
                         <div class="form-group">
                             <label>Start Radius</label>
-                            <select name="starting-radius"><option value="500">0.5 km</option><option value="1000" selected>1 km</option><option value="2000">2 km</option><option value="3000">3 km</option><option value="5000">5 km</option></select>
+                            <select name="starting-radius"><option value="500">0.5 km</option><option value="1000" selected>1 km</option><option value="2000">2 km</option><option value="5000">5 km</option></select>
                         </div>
                     </div>
                     <div class="form-row">
@@ -186,10 +186,13 @@
             window.insufficientPubs = null;
             
             try {
+                // FORCE FRESH SEARCH to debug distance/route issues
                 const cacheKey = `pubs_${btoa(location + historicFilter)}`;
                 const cached = localStorage.getItem(cacheKey);
                 let center, pubs, isFromCache = false;
 
+                // Uncomment this to use cache
+                /*
                 if (cached) {
                     const parsed = JSON.parse(cached);
                     if (Date.now() - parsed.timestamp < 86400000) {
@@ -198,16 +201,23 @@
                         isFromCache = true;
                     }
                 }
+                */
 
                 if (!isFromCache) {
                     center = await geocodeLocation(location);
-                    // [FIX] Radius Strategy: 
-                    // Search TIGHT radius (1.5km) first to find locals like "The Hero"
-                    // If we search 5km, popular results 4km away crowd out local gems.
-                    // This forces Google to return venues near start.
-                    const searchRadius = Math.max(parseInt(startingRadius), 1500); 
                     
-                    pubs = await findPubs(center, searchRadius, historicFilter);
+                    // [STRATEGY UPDATE] 
+                    // 1. Fetch close pubs (750m) to ensure local gems like The Hero/Prince Alfred are found.
+                    // 2. Fetch wider pubs (maxDistance) to fill the route.
+                    // 3. Merge and dedup.
+                    const localPubs = await findPubs(center, 750, historicFilter);
+                    const widePubs = await findPubs(center, Math.min(maxDistance, 3000), historicFilter);
+                    
+                    // Dedup logic
+                    const pubMap = new Map();
+                    [...localPubs, ...widePubs].forEach(p => pubMap.set(p.place_id, p));
+                    pubs = Array.from(pubMap.values());
+                    
                     localStorage.setItem(cacheKey, JSON.stringify({ center, pubs, timestamp: Date.now() }));
                 }
 
@@ -215,7 +225,7 @@
                 let filtered = pubs.filter(p => p.rating >= minRating);
                 if (filtered.length === 0) throw new Error("No pubs found matching criteria.");
                 
-                // --- ROUTE BUILDER ---
+                // --- STRICT DISTANCE ROUTE BUILDER ---
                 const startR = parseInt(startingRadius);
                 filtered.forEach(p => p.distFromCenter = google.maps.geometry.spherical.computeDistanceBetween(new google.maps.LatLng(center.lat, center.lng), p.geometry.location));
                 filtered.sort((a,b) => a.distFromCenter - b.distFromCenter);
@@ -225,12 +235,12 @@
 
                 let route = [startPub];
                 let currentRouteDist = 0;
-                let remaining = filtered.filter(p => p.place_id !== startPub.place_id); // Use ALL remaining pubs, no slicing!
+                let remaining = filtered.filter(p => p.place_id !== startPub.place_id);
                 let hitLimit = false;
                 
                 while(route.length < parseInt(numPubs) && remaining.length > 0) {
                     const current = route[route.length - 1];
-                    // Nearest Neighbor Sort
+                    // Strict Nearest Neighbor
                     remaining.sort((a,b) => {
                         const dA = google.maps.geometry.spherical.computeDistanceBetween(current.geometry.location, a.geometry.location);
                         const dB = google.maps.geometry.spherical.computeDistanceBetween(current.geometry.location, b.geometry.location);
@@ -240,6 +250,7 @@
                     const next = remaining[0];
                     const distToNext = google.maps.geometry.spherical.computeDistanceBetween(current.geometry.location, next.geometry.location);
                     
+                    // [STRICT CHECK] Stop if adding this leg exceeds total max distance
                     if (currentRouteDist + distToNext > maxDistance) {
                         hitLimit = true;
                         break; 
@@ -327,7 +338,6 @@
             if (navigator.share) {
                 navigator.share({ title: 'Pub Crawl Route', url: url }).catch(console.error);
             } else {
-                // Clipboard fallback
                 navigator.clipboard.writeText(url)
                     .then(() => alert('Link copied to clipboard!'))
                     .catch(() => prompt("Copy this link:", url));
@@ -337,7 +347,6 @@
         function displayResults(pubs, isFromCache) {
             directionsRenderer.setDirections(currentRouteData);
             
-            // [FIX] Map Bounds to fit Start Pin AND Route
             const bounds = new google.maps.LatLngBounds();
             bounds.extend(currentCenter);
             pubs.forEach(p => bounds.extend(p.geometry.location));
@@ -381,7 +390,7 @@
                 <div class="action-bar">
                     <a href="${mapsUrl}" target="_blank" class="action-btn primary">🗺️ Navigate</a>
                     <button class="action-btn" onclick="shareRoute()">🔗 Share</button>
-                    <button class="action-btn" onclick="alert('App coming soon! Check the App Store later.')">📱 App</button>
+                    <button class="action-btn" onclick="alert('App coming soon!')">📱 App</button>
                 </div>
             `;
 
@@ -425,24 +434,35 @@
             }).join('');
         }
 
+        // [FIXED] Modal Logic: Ensure Maps Link and Reviews render correctly
         function openDetails(idx) {
             const pub = currentPubs[idx];
             document.getElementById('modal-title').textContent = pub.name;
             const body = document.getElementById('modal-body');
-            body.innerHTML = 'Loading...';
+            body.innerHTML = 'Loading details...';
             document.getElementById('pub-modal').style.display = 'block';
             
+            // Build Maps Link
             const mapsLink = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(pub.name + ' ' + pub.vicinity)}&query_place_id=${pub.place_id}`;
+            const btnHtml = `<div style="margin-bottom:16px;"><a href="${mapsLink}" target="_blank" class="btn-link">📍 Open in Google Maps</a></div>`;
+
             placesService.getDetails({ placeId: pub.place_id, fields: ['reviews', 'rating'] }, (place) => {
-                let content = `<a href="${mapsLink}" target="_blank" class="btn-link">📍 Open in Google Maps</a>`;
-                if (place.reviews && place.reviews.length > 0) {
+                let reviewsHtml = '';
+                if (place && place.reviews && place.reviews.length > 0) {
                     const sorted = [...place.reviews].sort((a,b) => b.rating - a.rating);
-                    content += `<div class="review-card" style="border-left:4px solid #137333; margin-top:16px;"><strong>👍 Top Positive:</strong><br>"${sorted[0].text}"</div>`;
-                    if (sorted[sorted.length-1].rating <= 3) {
-                        content += `<div class="review-card" style="border-left:4px solid #d93025;"><strong>👎 Critical:</strong><br>"${sorted[sorted.length-1].text}"</div>`;
+                    const best = sorted[0];
+                    const worst = sorted[sorted.length-1];
+
+                    reviewsHtml += `<div class="review-card" style="border-left:4px solid #137333;"><strong>👍 Top Positive:</strong><br>"${best.text}"</div>`;
+                    
+                    if (worst.rating <= 3) {
+                        reviewsHtml += `<div class="review-card" style="border-left:4px solid #d93025; margin-top:12px;"><strong>👎 Critical:</strong><br>"${worst.text}"</div>`;
                     }
+                } else {
+                    reviewsHtml = '<p>No reviews available.</p>';
                 }
-                body.innerHTML = content;
+                
+                body.innerHTML = btnHtml + reviewsHtml;
             });
         }
 
