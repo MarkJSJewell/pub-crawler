@@ -32,6 +32,7 @@
         .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
         .search-btn { background: #1a73e8; color: white; border: none; padding: 12px; font-size: 14px; font-weight: 500; border-radius: 4px; cursor: pointer; width: 100%; }
 
+        /* Results */
         #map-container { height: 400px; width: 100%; background: #e8eaed; border-radius: 8px; margin-bottom: 20px; display: none; border: 1px solid #dadce0; }
         #map { height: 100%; width: 100%; }
         .results-section { display: none; }
@@ -137,7 +138,7 @@
                         </div>
                         <div class="form-group">
                             <label>Start Radius</label>
-                            <select name="starting-radius"><option value="500">0.5 km</option><option value="1000" selected>1 km</option><option value="2000">2 km</option><option value="5000">5 km</option></select>
+                            <select name="starting-radius"><option value="500">0.5 km</option><option value="1000" selected>1 km</option><option value="2000">2 km</option><option value="3000">3 km</option><option value="5000">5 km</option></select>
                         </div>
                     </div>
                     <div class="form-row">
@@ -200,7 +201,12 @@
 
                 if (!isFromCache) {
                     center = await geocodeLocation(location);
-                    const searchRadius = Math.min(maxDistance, 5000); 
+                    // [FIX] Radius Strategy: 
+                    // Search TIGHT radius (1.5km) first to find locals like "The Hero"
+                    // If we search 5km, popular results 4km away crowd out local gems.
+                    // This forces Google to return venues near start.
+                    const searchRadius = Math.max(parseInt(startingRadius), 1500); 
+                    
                     pubs = await findPubs(center, searchRadius, historicFilter);
                     localStorage.setItem(cacheKey, JSON.stringify({ center, pubs, timestamp: Date.now() }));
                 }
@@ -209,7 +215,7 @@
                 let filtered = pubs.filter(p => p.rating >= minRating);
                 if (filtered.length === 0) throw new Error("No pubs found matching criteria.");
                 
-                // --- STRICT DISTANCE ROUTE BUILDER ---
+                // --- ROUTE BUILDER ---
                 const startR = parseInt(startingRadius);
                 filtered.forEach(p => p.distFromCenter = google.maps.geometry.spherical.computeDistanceBetween(new google.maps.LatLng(center.lat, center.lng), p.geometry.location));
                 filtered.sort((a,b) => a.distFromCenter - b.distFromCenter);
@@ -219,11 +225,12 @@
 
                 let route = [startPub];
                 let currentRouteDist = 0;
-                let remaining = filtered.filter(p => p.place_id !== startPub.place_id);
+                let remaining = filtered.filter(p => p.place_id !== startPub.place_id); // Use ALL remaining pubs, no slicing!
                 let hitLimit = false;
                 
                 while(route.length < parseInt(numPubs) && remaining.length > 0) {
                     const current = route[route.length - 1];
+                    // Nearest Neighbor Sort
                     remaining.sort((a,b) => {
                         const dA = google.maps.geometry.spherical.computeDistanceBetween(current.geometry.location, a.geometry.location);
                         const dB = google.maps.geometry.spherical.computeDistanceBetween(current.geometry.location, b.geometry.location);
@@ -315,20 +322,22 @@
             });
         }
 
-        // [FIXED] Share function using proper Clipboard API
         function shareRoute() {
             const url = window.location.href;
             if (navigator.share) {
                 navigator.share({ title: 'Pub Crawl Route', url: url }).catch(console.error);
             } else {
-                navigator.clipboard.writeText(url).then(() => alert('Link copied to clipboard!')).catch(e => alert('Failed to copy'));
+                // Clipboard fallback
+                navigator.clipboard.writeText(url)
+                    .then(() => alert('Link copied to clipboard!'))
+                    .catch(() => prompt("Copy this link:", url));
             }
         }
 
         function displayResults(pubs, isFromCache) {
             directionsRenderer.setDirections(currentRouteData);
             
-            // [FIXED] Recenter map to fit all pins
+            // [FIX] Map Bounds to fit Start Pin AND Route
             const bounds = new google.maps.LatLngBounds();
             bounds.extend(currentCenter);
             pubs.forEach(p => bounds.extend(p.geometry.location));
@@ -353,7 +362,6 @@
             
             const mapsUrl = `https://www.google.com/maps/dir/?api=1&origin=${encodeURIComponent(pubs[0].vicinity)}&destination=${encodeURIComponent(pubs[pubs.length-1].vicinity)}&travelmode=walking`;
 
-            // [FIXED] Warning Notification logic
             let warningHTML = '';
             if (window.insufficientPubs) {
                 warningHTML = `<div class="warning-box">⚠️ Route capped at ${window.insufficientPubs.found} stops to stay within your distance limit.</div>`;
@@ -373,7 +381,7 @@
                 <div class="action-bar">
                     <a href="${mapsUrl}" target="_blank" class="action-btn primary">🗺️ Navigate</a>
                     <button class="action-btn" onclick="shareRoute()">🔗 Share</button>
-                    <button class="action-btn" onclick="alert('App coming soon!')">📱 App</button>
+                    <button class="action-btn" onclick="alert('App coming soon! Check the App Store later.')">📱 App</button>
                 </div>
             `;
 
