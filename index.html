@@ -168,7 +168,6 @@
         function initializeGoogleMaps() {
             map = new google.maps.Map(document.getElementById('map'), { zoom: 13, center: { lat: 51.5, lng: -0.1 }, mapTypeControl: false });
             directionsService = new google.maps.DirectionsService();
-            // Suppress default markers to use custom numbers
             directionsRenderer = new google.maps.DirectionsRenderer({ map: map, suppressMarkers: true });
             placesService = new google.maps.places.PlacesService(map);
             infoWindow = new google.maps.InfoWindow();
@@ -189,8 +188,8 @@
             window.insufficientPubs = null;
             
             try {
-                // Include criteria in cache key
-                const cacheKey = `pubs_${btoa(location + historicFilter + maxDistance + numPubs + startingRadius)}`;
+                // Cache key includes distance to ensure we re-fetch if distance changes
+                const cacheKey = `pubs_v2_${btoa(location + historicFilter + maxDistance + numPubs + startingRadius)}`;
                 const cached = localStorage.getItem(cacheKey);
                 let center, pubs, isFromCache = false;
 
@@ -208,15 +207,32 @@
                 if (!isFromCache) {
                     center = await geocodeLocation(location);
                     
-                    // [SUPER-SAMPLING] Fetch Center + 4 Directional Offsets to build a huge candidate pool
-                    // This fixes "Missing Local Pubs" by forcing Google to return 80-100 results total.
-                    const promises = [
-                        findPubs(center, Math.max(startingRadius, 1500), historicFilter), // Center
-                        findPubs({lat: center.lat + 0.01, lng: center.lng}, 1500, historicFilter), // North
-                        findPubs({lat: center.lat - 0.01, lng: center.lng}, 1500, historicFilter), // South
-                        findPubs({lat: center.lat, lng: center.lng + 0.015}, 1500, historicFilter), // East
-                        findPubs({lat: center.lat, lng: center.lng - 0.015}, 1500, historicFilter)  // West
+                    // [SMART GRID SEARCH] 
+                    // To find pubs "further down the route" (e.g. 5km away), we must search a wider area.
+                    // We generate a 3x3 grid around the start point based on the Max Walk distance.
+                    // This ensures pubs at Stop 17, 18, 19 are actually found.
+                    
+                    const step = Math.max(maxDistance / 3, 1000); // Grid step size
+                    // Convert meters to lat/lng (approx for London)
+                    const latStep = step / 111000;
+                    const lngStep = step / (111000 * Math.cos(center.lat * Math.PI / 180));
+                    
+                    const offsets = [
+                        {lat: 0, lng: 0}, // Center
+                        {lat: latStep, lng: 0}, {lat: -latStep, lng: 0}, // N, S
+                        {lat: 0, lng: lngStep}, {lat: 0, lng: -lngStep}, // E, W
+                        {lat: latStep, lng: lngStep}, {lat: latStep, lng: -lngStep}, // NE, NW
+                        {lat: -latStep, lng: lngStep}, {lat: -latStep, lng: -lngStep} // SE, SW
                     ];
+                    
+                    const searchRadius = Math.min(step, 3000); // Radius for each grid point
+                    
+                    const promises = offsets.map(offset => 
+                        findPubs({
+                            lat: center.lat + offset.lat, 
+                            lng: center.lng + offset.lng
+                        }, searchRadius, historicFilter)
+                    );
                     
                     const results = await Promise.all(promises);
                     const allPubs = results.flat();
@@ -238,10 +254,8 @@
                 filtered.forEach(p => p.distFromCenter = google.maps.geometry.spherical.computeDistanceBetween(new google.maps.LatLng(center.lat, center.lng), p.geometry.location));
                 filtered.sort((a,b) => a.distFromCenter - b.distFromCenter);
                 
-                // Ensure we start within the user's requested start radius
                 let startPub = filtered.find(p => p.distFromCenter <= startR);
-                // Fallback: If nothing in exact radius, take absolute closest
-                if (!startPub) startPub = filtered[0]; 
+                if (!startPub) startPub = filtered[0];
 
                 let route = [startPub];
                 let currentRouteDist = 0;
@@ -250,7 +264,6 @@
                 
                 while(route.length < parseInt(numPubs) && remaining.length > 0) {
                     const current = route[route.length - 1];
-                    // Strict Nearest Neighbor
                     remaining.sort((a,b) => {
                         const dA = google.maps.geometry.spherical.computeDistanceBetween(current.geometry.location, a.geometry.location);
                         const dB = google.maps.geometry.spherical.computeDistanceBetween(current.geometry.location, b.geometry.location);
@@ -260,7 +273,7 @@
                     const next = remaining[0];
                     const distToNext = google.maps.geometry.spherical.computeDistanceBetween(current.geometry.location, next.geometry.location);
                     
-                    // [FIX] 1.35x Multiplier to approximate walking distance
+                    // 1.35x Multiplier for Walking Distance approximation
                     const estimatedWalk = distToNext * 1.35;
 
                     if (currentRouteDist + estimatedWalk > maxDistance) {
@@ -307,8 +320,11 @@
         async function findPubs(center, radius, filter) {
             const user = firebase.auth().currentUser;
             const token = await user.getIdToken();
-            let keyword = 'pub';
-            if (filter === 'outdoor') keyword = 'pub with garden';
+            
+            // [FIX] Broader keywords to catch "Gastropubs" (like The Pelican) and "Inns"
+            let keyword = 'pub OR bar OR gastropub OR inn';
+            
+            if (filter === 'outdoor') keyword = 'pub with garden OR outdoor seating';
             if (filter === 'winebar') keyword = 'wine bar';
             if (filter === 'afternoontea') keyword = 'afternoon tea';
             if (filter === 'kidfriendly') keyword = 'pub family friendly OR child friendly';
@@ -354,22 +370,16 @@
 
         function displayResults(pubs, isFromCache) {
             directionsRenderer.setDirections(currentRouteData);
-            
             const bounds = new google.maps.LatLngBounds();
             bounds.extend(currentCenter);
             
-            // [FIX] Custom Numbered Markers
             pubs.forEach((p, i) => {
                 bounds.extend(p.geometry.location);
                 const marker = new google.maps.Marker({
-                    position: p.geometry.location,
-                    map: map,
+                    position: p.geometry.location, map: map,
                     label: { text: (i + 1).toString(), color: "white", fontWeight: "bold" },
-                    title: p.name,
-                    zIndex: 100 + i
+                    title: p.name, zIndex: 100 + i
                 });
-                
-                // [FIX] Map Popup with Link
                 const mapsUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(p.name)}&query_place_id=${p.place_id}`;
                 marker.addListener('click', () => {
                     infoWindow.setContent(`
@@ -384,14 +394,12 @@
                     infoWindow.open(map, marker);
                 });
             });
-            
             map.fitBounds(bounds);
 
-            // Start Pin
             new google.maps.Marker({
                 position: currentCenter, map: map,
                 icon: 'http://maps.google.com/mapfiles/ms/icons/blue-dot.png', 
-                title: 'Start'
+                title: 'Search Origin'
             });
 
             const totalDist = currentRouteData.routes[0].legs.reduce((acc, leg) => acc + leg.distance.value, 0);
@@ -470,7 +478,6 @@
             }).join('');
         }
 
-        // [FIX] Modal Content & Logic
         function openDetails(idx) {
             const pub = currentPubs[idx];
             document.getElementById('modal-title').textContent = pub.name;
@@ -478,12 +485,10 @@
             body.innerHTML = 'Loading details...';
             document.getElementById('pub-modal').style.display = 'block';
             
-            // Universal Cross-Platform Maps Link
-            const mapsUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(pub.name)}&query_place_id=${pub.place_id}`;
-            
+            const mapsLink = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(pub.name)}&query_place_id=${pub.place_id}`;
             const btnHtml = `
                 <div style="margin-bottom:16px; text-align:center;">
-                    <a href="${mapsUrl}" target="_blank" class="action-btn primary" style="display:inline-block; text-decoration:none; padding:12px 24px; font-size:14px;">
+                    <a href="${mapsLink}" target="_blank" class="action-btn primary" style="display:inline-block; text-decoration:none; padding:10px 20px;">
                         📍 Open in Google Maps
                     </a>
                 </div>`;
@@ -501,7 +506,6 @@
                             <div style="font-style:italic;">"${best.text}"</div>
                         </div>`;
                     
-                    // [FIX] Always show worst review if available and distinct
                     if (worst !== best) {
                         reviewsHtml += `
                             <div class="review-card" style="border-left:4px solid #d93025; margin-top:12px;">
