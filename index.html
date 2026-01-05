@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Pub Crawl Planner</title>
+    <title>Pub Crawl Planner v4</title>
     <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🍺</text></svg>">
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -30,7 +30,8 @@
         .form-group label { display: block; margin-bottom: 6px; font-weight: 500; color: #3c4043; font-size: 13px; }
         .form-group input, .form-group select { width: 100%; padding: 10px 12px; border: 1px solid #dadce0; border-radius: 4px; font-size: 14px; background: white; }
         .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
-        .search-btn { background: #1a73e8; color: white; border: none; padding: 12px; font-size: 14px; font-weight: 500; border-radius: 4px; cursor: pointer; width: 100%; }
+        .search-btn { background: #1a73e8; color: white; border: none; padding: 12px; font-size: 14px; font-weight: 500; border-radius: 4px; cursor: pointer; width: 100%; transition: background 0.2s; }
+        .search-btn:hover { background: #1557b0; }
 
         /* Results */
         #map-container { height: 400px; width: 100%; background: #e8eaed; border-radius: 8px; margin-bottom: 20px; display: none; border: 1px solid #dadce0; }
@@ -42,7 +43,8 @@
         .cache-fresh { background: #e6f4ea; color: #137333; border: 1px solid #ceead6; }
         .cache-stored { background: #e8f0fe; color: #1967d2; border: 1px solid #d2e3fc; }
 
-        .pub-card { background: white; border: 1px solid #dadce0; border-radius: 8px; padding: 16px; margin-bottom: 16px; display: grid; grid-template-columns: 1fr 300px; gap: 20px; cursor: pointer; }
+        .pub-card { background: white; border: 1px solid #dadce0; border-radius: 8px; padding: 16px; margin-bottom: 16px; display: grid; grid-template-columns: 1fr 300px; gap: 20px; cursor: pointer; transition: box-shadow 0.2s; }
+        .pub-card:hover { box-shadow: 0 4px 8px rgba(0,0,0,0.1); }
         @media (max-width: 768px) { .pub-card { grid-template-columns: 1fr; } }
         
         .pub-info h3 { color: #1a73e8; font-size: 16px; font-weight: 500; margin-bottom: 4px; }
@@ -75,6 +77,8 @@
         .btn-link { display: inline-block; padding: 8px 16px; background: #e8f0fe; color: #1967d2; text-decoration: none; border-radius: 4px; font-weight: 500; font-size: 13px; margin-top: 8px; width: 100%; text-align: center; }
         
         .warning-box { background: #fef7e0; border-left: 4px solid #fbbc04; padding: 10px; margin-top: 10px; font-size: 13px; color: #5f6368; border-radius: 4px; }
+        .risk-alert-box { background: #fce8e6; border: 1px solid #f28b82; border-radius: 8px; padding: 12px; margin-top: 16px; font-size: 13px; color: #c5221f; }
+        .risk-title { font-weight: bold; margin-bottom: 4px; display: flex; align-items: center; gap: 6px; }
     </style>
 </head>
 <body>
@@ -82,7 +86,7 @@
     <div class="header">
         <div class="header-left">
             <span style="font-size: 22px; margin-right: 8px;">🍺</span>
-            <div class="app-title">Pub Crawl Planner</div>
+            <div class="app-title">Pub Crawl Planner v4</div>
         </div>
         <div class="header-right">
             <div id="api-status" style="font-size: 13px; color: #5f6368; margin-right: 15px;">Connecting...</div>
@@ -102,7 +106,7 @@
             <div class="search-form">
                 <button type="button" class="close-form-btn" onclick="toggleSearch()">×</button>
                 <form id="search-form">
-                    <div class="form-group"><label>Start Location</label><input type="text" name="location" id="location-input" required></div>
+                    <div class="form-group"><label>Start Location</label><input type="text" name="location" id="location-input" required placeholder="e.g. Warwick Avenue, London"></div>
                     <div class="form-row">
                         <div class="form-group">
                             <label>Stops</label>
@@ -126,25 +130,31 @@
                     </div>
                     <div class="form-row">
                         <div class="form-group">
-                            <label>Max Walk</label>
-                            <select name="max-distance">
-                                <option value="2000">2 km</option>
-                                <option value="3000">3 km</option>
-                                <option value="5000" selected>5 km</option>
-                                <option value="10000">10 km</option>
-                                <option value="15000">15 km</option>
-                                <option value="20000">20 km</option>
+                            <label>Routing Strategy</label>
+                            <select name="sort-preference" style="border: 2px solid #1a73e8; background: #e8f0fe; color: #1a73e8; font-weight: 500;">
+                                <option value="distance">🚶 Shortest Walk (Efficient)</option>
+                                <option value="popularity">🌟 Most Popular (Best Reviews)</option>
                             </select>
                         </div>
                         <div class="form-group">
                             <label>Start Radius</label>
-                            <select name="starting-radius"><option value="500">0.5 km</option><option value="1000" selected>1 km</option><option value="2000">2 km</option><option value="3000">3 km</option><option value="5000">5 km</option></select>
+                            <select name="starting-radius"><option value="500">0.5 km</option><option value="1000" selected>1 km</option><option value="2000">2 km</option><option value="3000">3 km</option></select>
                         </div>
                     </div>
                     <div class="form-row">
                         <div class="form-group"><label>Min Rating</label><select name="min-rating"><option value="3.5">3.5+</option><option value="4.0" selected>4.0+</option><option value="4.5">4.5+</option></select></div>
                         <div class="form-group"><label>Opening</label><select name="open-now"><option value="false">Any time</option><option value="true">Open Now</option></select></div>
                     </div>
+                    <div class="form-group" style="margin-bottom:0;">
+                         <label>Max Walk Total</label>
+                            <select name="max-distance">
+                                <option value="3000">3 km</option>
+                                <option value="5000" selected>5 km</option>
+                                <option value="10000">10 km</option>
+                                <option value="20000">20 km</option>
+                            </select>
+                    </div>
+                    <br>
                     <button type="submit" class="search-btn">Find Route</button>
                 </form>
             </div>
@@ -153,7 +163,8 @@
         <div class="results-section" id="results-section">
             <div id="map-container"><div id="map"></div></div>
             <div class="route-summary" id="route-summary"></div>
-            <div id="pub-list"></div>
+            <div id="risk-analysis-container"></div>
+            <div id="pub-list" style="margin-top: 20px;"></div>
         </div>
     </div>
 
@@ -182,14 +193,15 @@
             wrapper.classList.toggle('collapsed');
         }
 
-        async function searchPubs(location, numPubs, historicFilter, maxDistance, minRating, openNow, startingRadius) {
+        async function searchPubs(location, numPubs, historicFilter, maxDistance, minRating, openNow, startingRadius, sortPreference) {
             document.getElementById('results-section').style.display = 'none';
             document.getElementById('map-container').style.display = 'block';
+            document.getElementById('risk-analysis-container').innerHTML = ''; // Clear previous risks
             window.insufficientPubs = null;
             
             try {
-                // Cache key V6
-                const cacheKey = `pubs_v6_${btoa(location + historicFilter + maxDistance + numPubs + startingRadius)}`;
+                // Include criteria in cache key
+                const cacheKey = `pubs_v4_${btoa(location + historicFilter + maxDistance + numPubs + startingRadius)}`;
                 const cached = localStorage.getItem(cacheKey);
                 let center, pubs, isFromCache = false;
 
@@ -207,46 +219,19 @@
                 if (!isFromCache) {
                     center = await geocodeLocation(location);
                     
-                    // [STRATEGY: FIXED DENSITY GRID]
-                    // Instead of scaling grid with distance, we use FIXED 800m steps.
-                    // Overlapping 1000m scans ensures NO GAPS.
-                    // This forces Google to yield local results at every step.
+                    // Flood search
+                    const step = Math.max(maxDistance / 3, 1000); 
+                    const latStep = step / 111000;
+                    const lngStep = step / (111000 * Math.cos(center.lat * Math.PI / 180));
+                    const offsets = [{lat: 0, lng: 0}, {lat: latStep, lng: 0}, {lat: -latStep, lng: 0}, {lat: 0, lng: lngStep}, {lat: 0, lng: -lngStep}];
                     
-                    const promises = [];
-                    
-                    // 1. Center
-                    promises.push(findPubs(center, 500, historicFilter));
-                    
-                    // 2. Fixed Inner Ring (800m distance)
-                    for (let i = 0; i < 8; i++) {
-                        const angle = (i * 45) * (Math.PI / 180);
-                        const latOffset = (800 / 111000) * Math.cos(angle);
-                        const lngOffset = (800 / (111000 * Math.cos(center.lat * Math.PI / 180))) * Math.sin(angle);
-                        promises.push(findPubs({ lat: center.lat + latOffset, lng: center.lng + lngOffset }, 1000, historicFilter));
+                    let allPubs = [];
+                    for (const offset of offsets) {
+                        const target = { lat: center.lat + offset.lat, lng: center.lng + offset.lng };
+                        const batch = await findPubs(target, 1500, historicFilter);
+                        allPubs = [...allPubs, ...batch];
                     }
                     
-                    // 3. Fixed Outer Ring (1600m distance) - Covers the 1.5km "Gap"
-                    for (let i = 0; i < 8; i++) {
-                        const angle = (i * 45) * (Math.PI / 180);
-                        const latOffset = (1600 / 111000) * Math.cos(angle);
-                        const lngOffset = (1600 / (111000 * Math.cos(center.lat * Math.PI / 180))) * Math.sin(angle);
-                        promises.push(findPubs({ lat: center.lat + latOffset, lng: center.lng + lngOffset }, 1000, historicFilter));
-                    }
-                    
-                    // 4. Far Ring (2400m) only if Long Walk selected
-                    if (maxDistance > 3000) {
-                        for (let i = 0; i < 4; i++) { // Cardinal points only to save API calls
-                            const angle = (i * 90) * (Math.PI / 180);
-                            const latOffset = (2400 / 111000) * Math.cos(angle);
-                            const lngOffset = (2400 / (111000 * Math.cos(center.lat * Math.PI / 180))) * Math.sin(angle);
-                            promises.push(findPubs({ lat: center.lat + latOffset, lng: center.lng + lngOffset }, 1000, historicFilter));
-                        }
-                    }
-                    
-                    const results = await Promise.all(promises);
-                    const allPubs = results.flat();
-                    
-                    // Deduplicate
                     const pubMap = new Map();
                     allPubs.forEach(p => pubMap.set(p.place_id, p));
                     pubs = Array.from(pubMap.values());
@@ -273,16 +258,41 @@
                 
                 while(route.length < parseInt(numPubs) && remaining.length > 0) {
                     const current = route[route.length - 1];
-                    remaining.sort((a,b) => {
-                        const dA = google.maps.geometry.spherical.computeDistanceBetween(current.geometry.location, a.geometry.location);
-                        const dB = google.maps.geometry.spherical.computeDistanceBetween(current.geometry.location, b.geometry.location);
-                        return dA - dB;
+                    
+                    // STRATEGY: Get candidates within a walkable cluster (e.g., 1.2km)
+                    // We don't want to jump 5km just because a place is popular.
+                    const MAX_JUMP_METERS = 1200; 
+                    let candidates = remaining.filter(p => {
+                        const d = google.maps.geometry.spherical.computeDistanceBetween(current.geometry.location, p.geometry.location);
+                        return d <= MAX_JUMP_METERS;
                     });
+
+                    // If no close candidates, look slightly further (emergency fallback)
+                    if (candidates.length === 0) {
+                        candidates = remaining.filter(p => {
+                            const d = google.maps.geometry.spherical.computeDistanceBetween(current.geometry.location, p.geometry.location);
+                            return d <= MAX_JUMP_METERS * 2;
+                        });
+                    }
+
+                    // Fallback to everyone if we are stuck (nearest neighbor fallback)
+                    if (candidates.length === 0) candidates = remaining;
+
+                    // SORT CANDIDATES
+                    if (sortPreference === 'popularity') {
+                        // Sort by Number of Ratings (Crowd Wisdom)
+                        candidates.sort((a,b) => (b.user_ratings_total || 0) - (a.user_ratings_total || 0));
+                    } else {
+                        // Sort by Distance (Efficiency)
+                        candidates.sort((a,b) => {
+                            const dA = google.maps.geometry.spherical.computeDistanceBetween(current.geometry.location, a.geometry.location);
+                            const dB = google.maps.geometry.spherical.computeDistanceBetween(current.geometry.location, b.geometry.location);
+                            return dA - dB;
+                        });
+                    }
                     
-                    const next = remaining[0];
+                    const next = candidates[0];
                     const distToNext = google.maps.geometry.spherical.computeDistanceBetween(current.geometry.location, next.geometry.location);
-                    
-                    // 1.4x Multiplier
                     const estimatedWalk = distToNext * 1.4;
 
                     if (currentRouteDist + estimatedWalk > maxDistance) {
@@ -292,7 +302,8 @@
                     
                     route.push(next);
                     currentRouteDist += estimatedWalk;
-                    remaining.shift();
+                    // Remove next from remaining
+                    remaining = remaining.filter(p => p.place_id !== next.place_id);
                 }
 
                 if (hitLimit) {
@@ -310,8 +321,54 @@
                 document.getElementById('results-section').style.display = 'block';
                 
                 displayResults(currentPubs, isFromCache);
+                analyzeRouteRisks(currentPubs); // <--- NEW RISK ENGINE
 
             } catch (e) { alert(e.message); }
+        }
+
+        // --- NEW RISK ENGINE ---
+        function analyzeRouteRisks(pubs) {
+            const riskContainer = document.getElementById('risk-analysis-container');
+            const risks = [];
+            
+            // 1. Late Route Warning
+            if (pubs.length >= 10) {
+                risks.push(`<strong>🕒 Pacing Alert:</strong> You have ${pubs.length} stops. Stops 10-20 often open later (12pm or 4pm). Ensure you start this route after 11:00 AM to avoid locked doors.`);
+            }
+
+            // 2. Vibe Mismatch Check (Keywords)
+            const restaurantKeywords = ['thai', 'indian', 'chinese', 'curry', 'sushi', 'restaurant', 'kitchen'];
+            let restaurantCount = 0;
+            pubs.forEach((p, i) => {
+                const name = (p.name + " " + (p.editorial_summary || "")).toLowerCase();
+                if (restaurantKeywords.some(k => name.includes(k))) {
+                    restaurantCount++;
+                    if (restaurantCount === 1) { // Only warn once
+                         risks.push(`<strong>🍽️ Vibe Check:</strong> Stop #${i+1} (${p.name}) might be more of a restaurant than a pub. Check if they allow casual drinking.`);
+                    }
+                }
+            });
+
+            // 3. Opening Hours "Gap" (Heuristic)
+            // If we found a "Club" or "Late Bar" early in the route
+            const lateKeywords = ['nightclub', 'late bar', 'lounge'];
+            pubs.slice(0, 3).forEach((p, i) => {
+                const name = (p.name).toLowerCase();
+                if (lateKeywords.some(k => name.includes(k))) {
+                    risks.push(`<strong>🔒 Opening Risk:</strong> Stop #${i+1} (${p.name}) looks like a late-night venue. It might not be open if you start early.`);
+                }
+            });
+
+            if (risks.length > 0) {
+                riskContainer.innerHTML = `
+                    <div class="risk-alert-box">
+                        <div class="risk-title">⚠️ Route Risk Analysis</div>
+                        <ul style="margin-left: 20px; margin-top: 5px;">
+                            ${risks.map(r => `<li style="margin-bottom:4px;">${r}</li>`).join('')}
+                        </ul>
+                    </div>
+                `;
+            }
         }
 
         async function geocodeLocation(address) {
@@ -329,8 +386,8 @@
         async function findPubs(center, radius, filter) {
             const user = firebase.auth().currentUser;
             const token = await user.getIdToken();
-            let keyword = 'pub OR bar OR gastropub OR inn OR tavern OR taproom OR lounge';
             
+            let keyword = 'pub OR bar OR gastropub OR inn';
             if (filter === 'outdoor') keyword = 'pub with garden OR outdoor seating';
             if (filter === 'winebar') keyword = 'wine bar';
             if (filter === 'afternoontea') keyword = 'afternoon tea';
@@ -394,6 +451,7 @@
                         <div style="padding:8px;">
                             <strong style="font-size:14px;">${i+1}. ${p.name}</strong><br>
                             <span style="font-size:12px; color:#555;">${p.vicinity}</span><br>
+                            <span style="font-size:12px; font-weight:bold; color:#fbbc04;">★ ${p.rating} (${p.user_ratings_total} reviews)</span><br>
                             <a href="${mapsUrl}" target="_blank" style="display:inline-block; margin-top:6px; color:#1a73e8; text-decoration:none; font-weight:500;">
                                 📍 Open in Google Maps
                             </a>
@@ -463,7 +521,7 @@
                 if (pub.allowsDogs || txt.includes('dog') || txt.includes('pet')) tags += `<span class="badge badge-dogfriendly">🐕 Dog Friendly</span>`;
                 if (txt.includes('child') || txt.includes('family') || txt.includes('kid')) tags += `<span class="badge badge-kidfriendly">🧸 Kid Friendly</span>`;
 
-                const ratingHtml = `<span style="color:#fbbc04;">★</span> <strong>${pub.rating || '--'}</strong>`;
+                const ratingHtml = `<span style="color:#fbbc04;">★</span> <strong>${pub.rating || '--'}</strong> <span style="font-size:11px; color:#70757a;">(${pub.user_ratings_total || 0})</span>`;
                 
                 let openHtml = '<span class="unknown-status">Check Hours</span>';
                 if (pub.open_now === true) openHtml = '<span class="open-status">Open Now</span>';
@@ -493,10 +551,10 @@
             body.innerHTML = 'Loading details...';
             document.getElementById('pub-modal').style.display = 'block';
             
-            const mapsLink = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(pub.name)}&query_place_id=${pub.place_id}`;
+            const mapsUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(pub.name)}&query_place_id=${pub.place_id}`;
             const btnHtml = `
                 <div style="margin-bottom:16px; text-align:center;">
-                    <a href="${mapsLink}" target="_blank" class="action-btn primary" style="display:inline-block; text-decoration:none; padding:10px 20px;">
+                    <a href="${mapsUrl}" target="_blank" class="action-btn primary" style="display:inline-block; text-decoration:none; padding:12px 24px; font-size:14px;">
                         📍 Open in Google Maps
                     </a>
                 </div>`;
@@ -514,7 +572,7 @@
                             <div style="font-style:italic;">"${best.text}"</div>
                         </div>`;
                     
-                    if (worst !== best) {
+                    if (worst.text && worst !== best) {
                         reviewsHtml += `
                             <div class="review-card" style="border-left:4px solid #d93025; margin-top:12px;">
                                 <div style="font-weight:bold; color:#d93025; margin-bottom:4px;">👎 Lowest Rated (${worst.rating}★)</div>
@@ -534,7 +592,7 @@
         document.getElementById('search-form').onsubmit = (e) => {
             e.preventDefault();
             const fd = new FormData(e.target);
-            searchPubs(fd.get('location'), fd.get('num-pubs'), fd.get('historic-filter'), fd.get('max-distance'), parseFloat(fd.get('min-rating')), fd.get('open-now') === 'true', fd.get('starting-radius'));
+            searchPubs(fd.get('location'), fd.get('num-pubs'), fd.get('historic-filter'), fd.get('max-distance'), parseFloat(fd.get('min-rating')), fd.get('open-now') === 'true', fd.get('starting-radius'), fd.get('sort-preference'));
         };
     </script>
     <script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-app-compat.js"></script>
