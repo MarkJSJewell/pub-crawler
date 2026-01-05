@@ -32,6 +32,7 @@
         .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
         .search-btn { background: #1a73e8; color: white; border: none; padding: 12px; font-size: 14px; font-weight: 500; border-radius: 4px; cursor: pointer; width: 100%; }
 
+        /* Results */
         #map-container { height: 400px; width: 100%; background: #e8eaed; border-radius: 8px; margin-bottom: 20px; display: none; border: 1px solid #dadce0; }
         #map { height: 100%; width: 100%; }
         .results-section { display: none; }
@@ -162,12 +163,15 @@
         let map, directionsService, directionsRenderer, placesService, currentCenter;
         let currentPubs = [];
         let currentRouteData = null;
+        let infoWindow = null;
 
         function initializeGoogleMaps() {
             map = new google.maps.Map(document.getElementById('map'), { zoom: 13, center: { lat: 51.5, lng: -0.1 }, mapTypeControl: false });
             directionsService = new google.maps.DirectionsService();
-            directionsRenderer = new google.maps.DirectionsRenderer({ map: map, suppressMarkers: false });
+            // Suppress default markers to use custom numbers
+            directionsRenderer = new google.maps.DirectionsRenderer({ map: map, suppressMarkers: true });
             placesService = new google.maps.places.PlacesService(map);
+            infoWindow = new google.maps.InfoWindow();
         }
 
         function initializeAutocomplete() {
@@ -185,8 +189,8 @@
             window.insufficientPubs = null;
             
             try {
-                // [FIX] Updated Cache Key to include Distance/NumPubs so changing criteria forces fresh load
-                const cacheKey = `pubs_${btoa(location + historicFilter + maxDistance + numPubs)}`;
+                // Include criteria in cache key
+                const cacheKey = `pubs_${btoa(location + historicFilter + maxDistance + numPubs + startingRadius)}`;
                 const cached = localStorage.getItem(cacheKey);
                 let center, pubs, isFromCache = false;
 
@@ -203,12 +207,23 @@
 
                 if (!isFromCache) {
                     center = await geocodeLocation(location);
-                    // [STRATEGY] Fetch close (1km) AND wide (maxDistance) to catch locals + route fillers
-                    const localPubs = await findPubs(center, 1000, historicFilter);
-                    const widePubs = await findPubs(center, Math.min(maxDistance, 5000), historicFilter);
                     
+                    // [SUPER-SAMPLING] Fetch Center + 4 Directional Offsets to build a huge candidate pool
+                    // This fixes "Missing Local Pubs" by forcing Google to return 80-100 results total.
+                    const promises = [
+                        findPubs(center, Math.max(startingRadius, 1500), historicFilter), // Center
+                        findPubs({lat: center.lat + 0.01, lng: center.lng}, 1500, historicFilter), // North
+                        findPubs({lat: center.lat - 0.01, lng: center.lng}, 1500, historicFilter), // South
+                        findPubs({lat: center.lat, lng: center.lng + 0.015}, 1500, historicFilter), // East
+                        findPubs({lat: center.lat, lng: center.lng - 0.015}, 1500, historicFilter)  // West
+                    ];
+                    
+                    const results = await Promise.all(promises);
+                    const allPubs = results.flat();
+                    
+                    // Deduplicate
                     const pubMap = new Map();
-                    [...localPubs, ...widePubs].forEach(p => pubMap.set(p.place_id, p));
+                    allPubs.forEach(p => pubMap.set(p.place_id, p));
                     pubs = Array.from(pubMap.values());
                     
                     localStorage.setItem(cacheKey, JSON.stringify({ center, pubs, timestamp: Date.now() }));
@@ -223,8 +238,10 @@
                 filtered.forEach(p => p.distFromCenter = google.maps.geometry.spherical.computeDistanceBetween(new google.maps.LatLng(center.lat, center.lng), p.geometry.location));
                 filtered.sort((a,b) => a.distFromCenter - b.distFromCenter);
                 
-                const startPub = filtered.find(p => p.distFromCenter <= startR);
-                if (!startPub) throw new Error(`No pubs found within ${startR/1000}km of start location.`);
+                // Ensure we start within the user's requested start radius
+                let startPub = filtered.find(p => p.distFromCenter <= startR);
+                // Fallback: If nothing in exact radius, take absolute closest
+                if (!startPub) startPub = filtered[0]; 
 
                 let route = [startPub];
                 let currentRouteDist = 0;
@@ -243,14 +260,16 @@
                     const next = remaining[0];
                     const distToNext = google.maps.geometry.spherical.computeDistanceBetween(current.geometry.location, next.geometry.location);
                     
-                    // [FIX] Hard Stop if distance exceeded
-                    if (currentRouteDist + distToNext > maxDistance) {
+                    // [FIX] 1.35x Multiplier to approximate walking distance
+                    const estimatedWalk = distToNext * 1.35;
+
+                    if (currentRouteDist + estimatedWalk > maxDistance) {
                         hitLimit = true;
                         break; 
                     }
                     
                     route.push(next);
-                    currentRouteDist += distToNext;
+                    currentRouteDist += estimatedWalk;
                     remaining.shift();
                 }
 
@@ -338,13 +357,41 @@
             
             const bounds = new google.maps.LatLngBounds();
             bounds.extend(currentCenter);
-            pubs.forEach(p => bounds.extend(p.geometry.location));
+            
+            // [FIX] Custom Numbered Markers
+            pubs.forEach((p, i) => {
+                bounds.extend(p.geometry.location);
+                const marker = new google.maps.Marker({
+                    position: p.geometry.location,
+                    map: map,
+                    label: { text: (i + 1).toString(), color: "white", fontWeight: "bold" },
+                    title: p.name,
+                    zIndex: 100 + i
+                });
+                
+                // [FIX] Map Popup with Link
+                const mapsUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(p.name)}&query_place_id=${p.place_id}`;
+                marker.addListener('click', () => {
+                    infoWindow.setContent(`
+                        <div style="padding:8px;">
+                            <strong style="font-size:14px;">${i+1}. ${p.name}</strong><br>
+                            <span style="font-size:12px; color:#555;">${p.vicinity}</span><br>
+                            <a href="${mapsUrl}" target="_blank" style="display:inline-block; margin-top:6px; color:#1a73e8; text-decoration:none; font-weight:500;">
+                                📍 Open in Google Maps
+                            </a>
+                        </div>
+                    `);
+                    infoWindow.open(map, marker);
+                });
+            });
+            
             map.fitBounds(bounds);
 
+            // Start Pin
             new google.maps.Marker({
                 position: currentCenter, map: map,
                 icon: 'http://maps.google.com/mapfiles/ms/icons/blue-dot.png', 
-                title: 'Search Origin'
+                title: 'Start'
             });
 
             const totalDist = currentRouteData.routes[0].legs.reduce((acc, leg) => acc + leg.distance.value, 0);
@@ -423,7 +470,7 @@
             }).join('');
         }
 
-        // [FIX] Modal Review & Maps Link Logic
+        // [FIX] Modal Content & Logic
         function openDetails(idx) {
             const pub = currentPubs[idx];
             document.getElementById('modal-title').textContent = pub.name;
@@ -431,11 +478,12 @@
             body.innerHTML = 'Loading details...';
             document.getElementById('pub-modal').style.display = 'block';
             
-            // Correct URL format
+            // Universal Cross-Platform Maps Link
             const mapsUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(pub.name)}&query_place_id=${pub.place_id}`;
+            
             const btnHtml = `
                 <div style="margin-bottom:16px; text-align:center;">
-                    <a href="${mapsUrl}" target="_blank" class="action-btn primary" style="display:inline-block; text-decoration:none; padding:10px 20px;">
+                    <a href="${mapsUrl}" target="_blank" class="action-btn primary" style="display:inline-block; text-decoration:none; padding:12px 24px; font-size:14px;">
                         📍 Open in Google Maps
                     </a>
                 </div>`;
@@ -453,11 +501,11 @@
                             <div style="font-style:italic;">"${best.text}"</div>
                         </div>`;
                     
-                    // Show worst only if it's genuinely bad (<=3 stars) and distinct
-                    if (worst.rating <= 3 && worst !== best) {
+                    // [FIX] Always show worst review if available and distinct
+                    if (worst !== best) {
                         reviewsHtml += `
                             <div class="review-card" style="border-left:4px solid #d93025; margin-top:12px;">
-                                <div style="font-weight:bold; color:#d93025; margin-bottom:4px;">👎 Critical (${worst.rating}★)</div>
+                                <div style="font-weight:bold; color:#d93025; margin-bottom:4px;">👎 Lowest Rated (${worst.rating}★)</div>
                                 <div style="font-style:italic;">"${worst.text}"</div>
                             </div>`;
                     }
