@@ -188,7 +188,8 @@
             window.insufficientPubs = null;
             
             try {
-                const cacheKey = `pubs_v4_${btoa(location + historicFilter + maxDistance + numPubs + startingRadius)}`;
+                // Cache key updated to force fresh search with new logic
+                const cacheKey = `pubs_v5_${btoa(location + historicFilter + maxDistance + numPubs + startingRadius)}`;
                 const cached = localStorage.getItem(cacheKey);
                 let center, pubs, isFromCache = false;
 
@@ -206,32 +207,47 @@
                 if (!isFromCache) {
                     center = await geocodeLocation(location);
                     
-                    // [STRATEGY: CONCENTRIC "RADAR" SEARCH]
-                    // 1. Inner Ring (500m): Ensures immediate neighbors (Heist Bank, Mad Bishop) are found.
-                    // 2. Middle Ring (1.5km): Finds the next layer.
-                    // 3. Outer Ring (3.0km+): Finds distant pubs for long routes.
+                    // [HIGH-DENSITY SCANNER STRATEGY]
+                    // Instead of searching wide, we search many small circles (500m radius).
+                    // This forces Google to return the "Top 20" for THAT specific block,
+                    // revealing local gems that would be hidden in a 2km search.
                     
-                    const promises = [
-                        findPubs(center, 500, historicFilter),  // Immediate neighbors (Priority)
-                        findPubs(center, 1500, historicFilter), // Local area
-                        findPubs(center, Math.min(maxDistance, 5000), historicFilter) // Wide net
-                    ];
+                    const promises = [];
                     
-                    // Add directional searches if max distance is large (>3km)
-                    if (maxDistance > 3000) {
-                        const step = 2000; 
-                        const latStep = step / 111000;
-                        const lngStep = step / (111000 * Math.cos(center.lat * Math.PI / 180));
-                        promises.push(findPubs({lat: center.lat + latStep, lng: center.lng}, 1500, historicFilter));
-                        promises.push(findPubs({lat: center.lat - latStep, lng: center.lng}, 1500, historicFilter));
-                        promises.push(findPubs({lat: center.lat, lng: center.lng + lngStep}, 1500, historicFilter));
-                        promises.push(findPubs({lat: center.lat, lng: center.lng - lngStep}, 1500, historicFilter));
+                    // 1. Center (Start)
+                    promises.push(findPubs(center, 500, historicFilter));
+                    
+                    // 2. Inner Ring: 8 points at 500m distance
+                    for (let i = 0; i < 8; i++) {
+                        const angle = (i * 45) * (Math.PI / 180);
+                        const latOffset = (500 / 111000) * Math.cos(angle);
+                        const lngOffset = (500 / (111000 * Math.cos(center.lat * Math.PI / 180))) * Math.sin(angle);
+                        promises.push(findPubs({ lat: center.lat + latOffset, lng: center.lng + lngOffset }, 500, historicFilter));
                     }
                     
+                    // 3. Middle Ring: 8 points at 1000m distance
+                    for (let i = 0; i < 8; i++) {
+                        const angle = (i * 45) * (Math.PI / 180);
+                        const latOffset = (1000 / 111000) * Math.cos(angle);
+                        const lngOffset = (1000 / (111000 * Math.cos(center.lat * Math.PI / 180))) * Math.sin(angle);
+                        promises.push(findPubs({ lat: center.lat + latOffset, lng: center.lng + lngOffset }, 500, historicFilter));
+                    }
+
+                    // 4. Outer Ring: 8 points at 1500m distance (Only if max walk > 3km)
+                    if (maxDistance > 3000) {
+                        for (let i = 0; i < 8; i++) {
+                            const angle = (i * 45) * (Math.PI / 180);
+                            const latOffset = (1500 / 111000) * Math.cos(angle);
+                            const lngOffset = (1500 / (111000 * Math.cos(center.lat * Math.PI / 180))) * Math.sin(angle);
+                            promises.push(findPubs({ lat: center.lat + latOffset, lng: center.lng + lngOffset }, 500, historicFilter));
+                        }
+                    }
+                    
+                    // Run all searches in parallel
                     const results = await Promise.all(promises);
                     const allPubs = results.flat();
                     
-                    // Deduplicate based on Place ID
+                    // Deduplicate by Place ID
                     const pubMap = new Map();
                     allPubs.forEach(p => pubMap.set(p.place_id, p));
                     pubs = Array.from(pubMap.values());
@@ -248,7 +264,6 @@
                 filtered.forEach(p => p.distFromCenter = google.maps.geometry.spherical.computeDistanceBetween(new google.maps.LatLng(center.lat, center.lng), p.geometry.location));
                 filtered.sort((a,b) => a.distFromCenter - b.distFromCenter);
                 
-                // Prioritize Start
                 let startPub = filtered.find(p => p.distFromCenter <= startR);
                 if (!startPub) startPub = filtered[0];
 
@@ -259,7 +274,6 @@
                 
                 while(route.length < parseInt(numPubs) && remaining.length > 0) {
                     const current = route[route.length - 1];
-                    // Strict Nearest Neighbor
                     remaining.sort((a,b) => {
                         const dA = google.maps.geometry.spherical.computeDistanceBetween(current.geometry.location, a.geometry.location);
                         const dB = google.maps.geometry.spherical.computeDistanceBetween(current.geometry.location, b.geometry.location);
@@ -269,7 +283,6 @@
                     const next = remaining[0];
                     const distToNext = google.maps.geometry.spherical.computeDistanceBetween(current.geometry.location, next.geometry.location);
                     
-                    // [FIX] 1.4x Multiplier for Walking Distance
                     const estimatedWalk = distToNext * 1.4;
 
                     if (currentRouteDist + estimatedWalk > maxDistance) {
@@ -316,8 +329,6 @@
         async function findPubs(center, radius, filter) {
             const user = firebase.auth().currentUser;
             const token = await user.getIdToken();
-            
-            // [FIX] Broader Keywords to catch "Bars" like Heist Bank and "Taverns"
             let keyword = 'pub OR bar OR gastropub OR inn OR tavern OR taproom OR lounge';
             
             if (filter === 'outdoor') keyword = 'pub with garden OR outdoor seating';
@@ -475,7 +486,6 @@
             }).join('');
         }
 
-        // [FIX] Modal Content
         function openDetails(idx) {
             const pub = currentPubs[idx];
             document.getElementById('modal-title').textContent = pub.name;
@@ -483,10 +493,10 @@
             body.innerHTML = 'Loading details...';
             document.getElementById('pub-modal').style.display = 'block';
             
-            const mapsLink = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(pub.name)}&query_place_id=${pub.place_id}`;
+            const mapsUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(pub.name)}&query_place_id=${pub.place_id}`;
             const btnHtml = `
                 <div style="margin-bottom:16px; text-align:center;">
-                    <a href="${mapsLink}" target="_blank" class="action-btn primary" style="display:inline-block; text-decoration:none; padding:10px 20px;">
+                    <a href="${mapsUrl}" target="_blank" class="action-btn primary" style="display:inline-block; text-decoration:none; padding:10px 20px;">
                         📍 Open in Google Maps
                     </a>
                 </div>`;
@@ -504,14 +514,11 @@
                             <div style="font-style:italic;">"${best.text}"</div>
                         </div>`;
                     
-                    // Show lowest rated review regardless of score, unless it's the SAME as best
-                    if (worst !== best) {
-                        reviewsHtml += `
-                            <div class="review-card" style="border-left:4px solid #d93025; margin-top:12px;">
-                                <div style="font-weight:bold; color:#d93025; margin-bottom:4px;">👎 Lowest Rated (${worst.rating}★)</div>
-                                <div style="font-style:italic;">"${worst.text}"</div>
-                            </div>`;
-                    }
+                    reviewsHtml += `
+                        <div class="review-card" style="border-left:4px solid #d93025; margin-top:12px;">
+                            <div style="font-weight:bold; color:#d93025; margin-bottom:4px;">👎 Lowest Rated (${worst.rating}★)</div>
+                            <div style="font-style:italic;">"${worst.text}"</div>
+                        </div>`;
                 } else {
                     reviewsHtml = '<p style="text-align:center; color:#666;">No written reviews available.</p>';
                 }
